@@ -1,9 +1,11 @@
 "use client"
 
 import { useDriver } from "@/hooks/useDriver"
+import { useDriverRadar } from "@/hooks/useDriverRadar"
 import { useSurplusStore } from "@/store/useSurplusStore"
 import { getHoursUntilExpiry } from "@/utils/time"
 import { Button } from "@/components/ui/button"
+import { ComplianceModal } from "@/components/ui/ComplianceModal"
 import { motion, AnimatePresence } from "framer-motion"
 import { Navigation2, CheckCircle2, Clock, Scan, Crosshair, Leaf, Zap, TrendingUp, Truck, Package, Shield } from "lucide-react"
 import Map, { Marker, NavigationControl } from 'react-map-gl/mapbox'
@@ -57,6 +59,25 @@ export function DriverDashboardModule() {
     return () => navigator.geolocation.clearWatch(watchId)
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
+
+  /* ─── Radar: Broadcast location to Supabase ─── */
+  useDriverRadar(driverLocation, locationReady)
+
+  /* ─── Compliance Modal State ─── */
+  const [complianceTarget, setComplianceTarget] = useState<{ id: string; name: string; quantity: number; unit: string } | null>(null)
+
+  const handleConfirmPickup = (itemId: string) => {
+    const item = activeRuns.find(r => r.id === itemId)
+    if (item) setComplianceTarget({ id: item.id, name: item.name, quantity: item.quantity, unit: item.unit })
+  }
+
+  const handleComplianceConfirm = (signatureData: string) => {
+    if (complianceTarget) {
+      completeDelivery(complianceTarget.id)
+      console.log('[Compliance] Signed waiver for:', complianceTarget.name, '| Signature length:', signatureData.length)
+    }
+    setComplianceTarget(null)
+  }
 
   const handleCenter = () => {
     setViewState(prev => ({
@@ -198,12 +219,12 @@ export function DriverDashboardModule() {
                       )}
                     </div>
                     <Button
-                      onClick={() => completeDelivery(item.id)}
+                      onClick={() => handleConfirmPickup(item.id)}
                       size="sm"
                       className="w-full bg-[#153F2D] hover:bg-[#0f2d20] text-white font-extrabold tracking-widest uppercase text-[10px] py-4 rounded-xl shadow-sm"
                     >
-                      <CheckCircle2 className="w-3.5 h-3.5 mr-1.5" />
-                      Confirm Pickup
+                      <Shield className="w-3.5 h-3.5 mr-1.5" />
+                      Verify & Pickup
                     </Button>
                   </motion.div>
                 )
@@ -284,6 +305,17 @@ export function DriverDashboardModule() {
           </div>
         </BentoCard>
       </div>
+
+      {/* ─── Compliance Modal ─── */}
+      <ComplianceModal
+        isOpen={!!complianceTarget}
+        onClose={() => setComplianceTarget(null)}
+        onConfirm={handleComplianceConfirm}
+        itemName={complianceTarget?.name ?? ''}
+        itemQuantity={complianceTarget?.quantity ?? 0}
+        itemUnit={complianceTarget?.unit ?? ''}
+        actionType="pickup"
+      />
     </div>
   )
 }
