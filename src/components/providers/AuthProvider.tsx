@@ -5,7 +5,7 @@ import { supabase } from '@/lib/supabase'
 import type { User, Session } from '@supabase/supabase-js'
 
 /* ─── Role Types ─── */
-export type UserRole = 'donor' | 'driver' | 'receiver'
+export type UserRole = 'donor' | 'driver' | 'receiver' | 'volunteer'
 
 export interface UserProfile {
   id: string

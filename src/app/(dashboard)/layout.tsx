@@ -20,7 +20,7 @@ export default function DashboardLayout({
     router.push('/login');
   };
 
-  const roleColor = profile?.role === 'donor' ? '#5DB06D' : profile?.role === 'driver' ? '#EAB308' : '#7C3AED';
+  const roleColor = profile?.role === 'donor' ? '#5DB06D' : profile?.role === 'driver' ? '#EAB308' : profile?.role === 'volunteer' ? '#0EA5E9' : '#7C3AED';
 
   return (
     <div className="min-h-screen flex flex-col bg-[#F5F0EB] text-[#1A3C34]">

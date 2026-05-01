@@ -4,13 +4,14 @@ import { useState } from "react"
 import { useAuth, type UserRole } from "@/components/providers/AuthProvider"
 import { useRouter } from "next/navigation"
 import { motion, AnimatePresence } from "framer-motion"
-import { LogIn, UserPlus, Truck, Store, Heart, ArrowRight, Shield, Brain, Eye, EyeOff } from "lucide-react"
+import { LogIn, UserPlus, Truck, Store, Heart, Zap, ArrowRight, Shield, Brain, Eye, EyeOff } from "lucide-react"
 import Link from "next/link"
 
 const ROLES: { id: UserRole; label: string; icon: typeof Truck; desc: string; color: string }[] = [
   { id: 'donor', label: 'Donor', icon: Store, desc: 'Restaurant, Grocery, Catering', color: '#5DB06D' },
   { id: 'driver', label: 'Driver', icon: Truck, desc: 'Logistics & Fleet Operator', color: '#EAB308' },
   { id: 'receiver', label: 'Receiver', icon: Heart, desc: 'Food Bank, Shelter, NGO', color: '#7C3AED' },
+  { id: 'volunteer', label: 'Volunteer', icon: Zap, desc: 'Community Rescue Hub', color: '#0EA5E9' },
 ]
 
 export default function LoginPage() {
@@ -91,7 +92,7 @@ export default function LoginPage() {
             <label className="text-[11px] font-extrabold uppercase tracking-widest text-[#153F2D]/40 mb-3 block">
               {mode === 'login' ? 'Dashboard' : 'Your Role'}
             </label>
-            <div className="grid grid-cols-3 gap-2">
+            <div className="grid grid-cols-2 gap-2">
               {ROLES.map((role) => {
                 const Icon = role.icon
                 const isSelected = selectedRole === role.id

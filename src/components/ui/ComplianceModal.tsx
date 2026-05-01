@@ -1,13 +1,14 @@
 "use client"
 
-import { useState, useRef, useCallback } from "react"
+import { useState, useCallback } from "react"
 import { motion, AnimatePresence } from "framer-motion"
-import { Shield, X, CheckCircle2, FileText } from "lucide-react"
+import { Shield, X, CheckCircle2, FileText, Thermometer } from "lucide-react"
+import { SignaturePad } from "./SignaturePad"
 
 interface ComplianceModalProps {
   isOpen: boolean
   onClose: () => void
-  onConfirm: (signatureData: string) => void
+  onConfirm: (signatureData: string, temp?: number) => void
   itemName: string
   itemQuantity: number
   itemUnit: string
@@ -23,68 +24,25 @@ export function ComplianceModal({
   itemUnit,
   actionType
 }: ComplianceModalProps) {
-  const canvasRef = useRef<HTMLCanvasElement>(null)
-  const [isDrawing, setIsDrawing] = useState(false)
-  const [hasSigned, setHasSigned] = useState(false)
+  const [signatureData, setSignatureData] = useState<string | null>(null)
+  const [temperature, setTemperature] = useState<string>("")
   const [confirmed, setConfirmed] = useState(false)
 
-  /* ─── Drawing logic ─── */
-  const startDraw = useCallback((e: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement>) => {
-    const canvas = canvasRef.current
-    if (!canvas) return
-    const ctx = canvas.getContext('2d')
-    if (!ctx) return
-
-    setIsDrawing(true)
-    const rect = canvas.getBoundingClientRect()
-    const x = 'touches' in e ? e.touches[0].clientX - rect.left : e.clientX - rect.left
-    const y = 'touches' in e ? e.touches[0].clientY - rect.top : e.clientY - rect.top
-    ctx.beginPath()
-    ctx.moveTo(x, y)
-  }, [])
-
-  const draw = useCallback((e: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement>) => {
-    if (!isDrawing) return
-    const canvas = canvasRef.current
-    if (!canvas) return
-    const ctx = canvas.getContext('2d')
-    if (!ctx) return
-
-    const rect = canvas.getBoundingClientRect()
-    const x = 'touches' in e ? e.touches[0].clientX - rect.left : e.clientX - rect.left
-    const y = 'touches' in e ? e.touches[0].clientY - rect.top : e.clientY - rect.top
-    ctx.strokeStyle = '#153F2D'
-    ctx.lineWidth = 2.5
-    ctx.lineCap = 'round'
-    ctx.lineJoin = 'round'
-    ctx.lineTo(x, y)
-    ctx.stroke()
-    setHasSigned(true)
-  }, [isDrawing])
-
-  const endDraw = useCallback(() => {
-    setIsDrawing(false)
-  }, [])
-
-  const clearSignature = () => {
-    const canvas = canvasRef.current
-    if (!canvas) return
-    const ctx = canvas.getContext('2d')
-    if (!ctx) return
-    ctx.clearRect(0, 0, canvas.width, canvas.height)
-    setHasSigned(false)
-  }
+  // Determine if item needs cold chain verification based on name
+  const requiresColdChain = /chicken|beef|meat|fish|dairy|milk|cheese|yogurt/i.test(itemName)
+  const tempNumber = parseFloat(temperature)
+  const isTempInvalid = requiresColdChain && (isNaN(tempNumber) || tempNumber > 41)
 
   const handleConfirm = () => {
-    const canvas = canvasRef.current
-    const signatureData = canvas ? canvas.toDataURL('image/png') : ''
+    if (!signatureData) return
+    if (requiresColdChain && isTempInvalid) return
+
     setConfirmed(true)
-    // Brief success state then close
     setTimeout(() => {
-      onConfirm(signatureData)
+      onConfirm(signatureData, requiresColdChain ? tempNumber : undefined)
       setConfirmed(false)
-      setHasSigned(false)
-      clearSignature()
+      setSignatureData(null)
+      setTemperature("")
     }, 1200)
   }
 
@@ -114,7 +72,7 @@ export function ComplianceModal({
             transition={{ type: "spring", stiffness: 300, damping: 30 }}
             className="fixed inset-0 z-50 flex items-center justify-center p-4"
           >
-            <div className="bg-white rounded-[2rem] shadow-[0_32px_64px_-12px_rgba(21,63,45,0.2)] border border-[#153F2D]/5 w-full max-w-[480px] overflow-hidden">
+            <div className="bg-white rounded-[2rem] shadow-[0_32px_64px_-12px_rgba(21,63,45,0.2)] border border-[#153F2D]/5 w-full max-w-[480px] overflow-hidden max-h-[90vh] flex flex-col">
 
               {/* Success State */}
               {confirmed ? (
@@ -132,7 +90,7 @@ export function ComplianceModal({
               ) : (
                 <>
                   {/* Header */}
-                  <div className="p-6 pb-4 border-b border-[#153F2D]/5 flex items-center justify-between">
+                  <div className="p-6 pb-4 border-b border-[#153F2D]/5 flex items-center justify-between shrink-0">
                     <div className="flex items-center gap-3">
                       <div className="w-10 h-10 rounded-xl bg-[#153F2D] flex items-center justify-center">
                         <Shield className="w-5 h-5 text-white" />
@@ -153,7 +111,7 @@ export function ComplianceModal({
                   </div>
 
                   {/* Transfer Details */}
-                  <div className="p-6 space-y-5">
+                  <div className="p-6 space-y-5 overflow-y-auto flex-1">
                     <div className="rounded-2xl bg-[#153F2D]/[0.03] border border-[#153F2D]/5 p-4">
                       <div className="flex items-center justify-between mb-3">
                         <span className="text-[10px] font-extrabold uppercase tracking-widest text-[#153F2D]/40">Transfer Record</span>
@@ -170,52 +128,53 @@ export function ComplianceModal({
                       </div>
                     </div>
 
+                    {/* Cold Chain HACCP Verification */}
+                    {requiresColdChain && (
+                      <div className={`rounded-2xl border p-4 transition-colors ${isTempInvalid && temperature !== "" ? 'bg-[#D9534F]/5 border-[#D9534F]/20' : 'bg-[#EAB308]/5 border-[#EAB308]/20'}`}>
+                        <div className="flex items-center justify-between mb-3">
+                          <div className="flex items-center gap-1.5">
+                            <Thermometer className={`w-3.5 h-3.5 ${isTempInvalid && temperature !== "" ? 'text-[#D9534F]' : 'text-[#EAB308]'}`} />
+                            <span className="text-[11px] font-extrabold uppercase tracking-widest text-[#153F2D]">Cold Chain Audit</span>
+                          </div>
+                          <span className="text-[9px] font-bold uppercase tracking-widest text-[#153F2D]/40">HACCP Req.</span>
+                        </div>
+                        <p className="text-[12px] font-medium text-[#153F2D]/60 mb-3">
+                          Perishable item detected. Enter internal cooler temperature. Must be ≤ 41°F.
+                        </p>
+                        <div className="flex items-center gap-3">
+                          <input 
+                            type="number" 
+                            value={temperature}
+                            onChange={(e) => setTemperature(e.target.value)}
+                            placeholder="38"
+                            className="bg-white border border-[#153F2D]/10 rounded-xl px-4 py-2 w-24 text-[14px] font-bold text-[#153F2D] outline-none focus:border-[#5DB06D]"
+                          />
+                          <span className="text-[14px] font-bold text-[#153F2D]/50">°F</span>
+                        </div>
+                        {isTempInvalid && temperature !== "" && (
+                          <p className="text-[11px] font-bold text-[#D9534F] mt-2">
+                            Temperature exceeds safe limits (41°F). Delivery cannot be verified.
+                          </p>
+                        )}
+                      </div>
+                    )}
+
                     {/* Legal Notice */}
-                    <div className="rounded-2xl bg-[#EAB308]/5 border border-[#EAB308]/10 p-4">
+                    <div className="rounded-2xl bg-white border border-[#153F2D]/5 p-4 shadow-sm">
                       <p className="text-[11px] font-bold text-[#153F2D]/70 leading-relaxed">
                         This transfer is protected under the <span className="text-[#153F2D] font-extrabold">Bill Emerson Good Samaritan Food Donation Act</span> (42 U.S.C. § 1791).
-                        Donors acting in good faith are shielded from civil and criminal liability for donated food.
                       </p>
                     </div>
 
                     {/* Signature Pad */}
-                    <div>
-                      <div className="flex items-center justify-between mb-2">
-                        <span className="text-[10px] font-extrabold uppercase tracking-widest text-[#153F2D]/40">Digital Signature</span>
-                        {hasSigned && (
-                          <button
-                            onClick={clearSignature}
-                            className="text-[10px] font-bold text-[#D9534F] uppercase tracking-widest hover:text-[#c9302c] transition-colors"
-                          >
-                            Clear
-                          </button>
-                        )}
-                      </div>
-                      <div className="rounded-2xl border-2 border-dashed border-[#153F2D]/10 bg-white overflow-hidden relative">
-                        <canvas
-                          ref={canvasRef}
-                          width={432}
-                          height={120}
-                          className="w-full h-[120px] cursor-crosshair touch-none"
-                          onMouseDown={startDraw}
-                          onMouseMove={draw}
-                          onMouseUp={endDraw}
-                          onMouseLeave={endDraw}
-                          onTouchStart={startDraw}
-                          onTouchMove={draw}
-                          onTouchEnd={endDraw}
-                        />
-                        {!hasSigned && (
-                          <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                            <p className="text-[13px] text-[#153F2D]/20 font-bold">Sign here</p>
-                          </div>
-                        )}
-                      </div>
-                    </div>
+                    <SignaturePad 
+                      label={actionType === 'pickup' ? "Donor Signature" : "Receiver Signature"}
+                      onSignatureChange={setSignatureData} 
+                    />
                   </div>
 
                   {/* Actions */}
-                  <div className="p-6 pt-2 flex gap-3">
+                  <div className="p-6 pt-2 flex gap-3 shrink-0">
                     <button
                       onClick={onClose}
                       className="flex-1 py-4 rounded-xl border border-[#153F2D]/10 text-[#153F2D]/60 font-bold text-[12px] uppercase tracking-widest hover:bg-[#153F2D]/5 transition-colors"
@@ -223,12 +182,12 @@ export function ComplianceModal({
                       Cancel
                     </button>
                     <motion.button
-                      whileHover={{ scale: hasSigned ? 1.02 : 1 }}
-                      whileTap={{ scale: hasSigned ? 0.98 : 1 }}
+                      whileHover={{ scale: signatureData && !isTempInvalid ? 1.02 : 1 }}
+                      whileTap={{ scale: signatureData && !isTempInvalid ? 0.98 : 1 }}
                       onClick={handleConfirm}
-                      disabled={!hasSigned}
+                      disabled={!signatureData || isTempInvalid}
                       className={`flex-[2] py-4 rounded-xl font-extrabold text-[12px] uppercase tracking-widest flex items-center justify-center gap-2 transition-all ${
-                        hasSigned
+                        signatureData && !isTempInvalid
                           ? 'bg-[#153F2D] text-white shadow-[0_8px_16px_rgba(21,63,45,0.2)] cursor-pointer'
                           : 'bg-[#153F2D]/10 text-[#153F2D]/30 cursor-not-allowed'
                       }`}

@@ -73,10 +73,11 @@ export function DriverDashboardModule() {
     if (item) setComplianceTarget({ id: item.id, name: item.name, quantity: item.quantity, unit: item.unit })
   }
 
-  const handleComplianceConfirm = (signatureData: string) => {
+  const handleComplianceConfirm = (signatureData: string, temp?: number) => {
     if (complianceTarget) {
       completeDelivery(complianceTarget.id)
-      console.log('[Compliance] Signed waiver for:', complianceTarget.name, '| Signature length:', signatureData.length)
+      console.log('[Compliance] Signed waiver for:', complianceTarget.name, '| Temp:', temp, '| Sig:', signatureData.substring(0, 20) + '...')
+      // In production, we would upload signatureData and temp to Supabase Storage/Database here
     }
     setComplianceTarget(null)
   }
