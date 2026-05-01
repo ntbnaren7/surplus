@@ -1,224 +1,289 @@
 "use client"
 
 import { useDriver } from "@/hooks/useDriver"
+import { useSurplusStore } from "@/store/useSurplusStore"
 import { getHoursUntilExpiry } from "@/utils/time"
 import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
-import { motion, AnimatePresence, type Variants } from "framer-motion"
-import { MapPin, Navigation2, CheckCircle2, AlertTriangle, Route, Clock, Scan } from "lucide-react"
-import Image from "next/image"
+import { motion, AnimatePresence } from "framer-motion"
+import { Navigation2, CheckCircle2, Clock, Scan, Crosshair, Leaf, Zap, TrendingUp, Truck, Package, Shield } from "lucide-react"
+import Map, { Marker, NavigationControl } from 'react-map-gl/mapbox'
+import 'mapbox-gl/dist/mapbox-gl.css'
+import { useState, useEffect, useMemo } from "react"
 
-const fadeUp: Variants = {
-  hidden: { opacity: 0, y: 16 },
-  show: { opacity: 1, y: 0, transition: { type: "spring", stiffness: 260, damping: 28 } },
-}
-
-const stagger: Variants = {
-  hidden: {},
-  show: { transition: { staggerChildren: 0.08 } },
+/* ─── Bento card wrapper ─── */
+function BentoCard({ children, className = "", delay = 0 }: { children: React.ReactNode; className?: string; delay?: number }) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 12, scale: 0.97 }}
+      animate={{ opacity: 1, y: 0, scale: 1 }}
+      transition={{ duration: 0.45, delay, ease: [0.25, 0.46, 0.45, 0.94] }}
+      className={`rounded-[2rem] bg-white/80 backdrop-blur-2xl border border-[#153F2D]/[0.06] shadow-[0_8px_30px_-12px_rgba(21,63,45,0.08)] overflow-hidden transition-all duration-300 hover:shadow-[0_16px_40px_-12px_rgba(21,63,45,0.12)] hover:-translate-y-0.5 ${className}`}
+    >
+      {children}
+    </motion.div>
+  )
 }
 
 export function DriverDashboardModule() {
   const { activeRuns, completeDelivery } = useDriver()
+  const { inventory } = useSurplusStore()
+
+  /* ─── Geolocation ─── */
+  const [driverLocation, setDriverLocation] = useState({ lat: 40.7128, lng: -74.0060 })
+  const [locationReady, setLocationReady] = useState(false)
+
+  const [viewState, setViewState] = useState({
+    longitude: -74.0060,
+    latitude: 40.7128,
+    zoom: 13,
+    pitch: 40,
+    bearing: -15
+  })
+
+  useEffect(() => {
+    if (!("geolocation" in navigator)) return
+    const watchId = navigator.geolocation.watchPosition(
+      (pos) => {
+        const loc = { lat: pos.coords.latitude, lng: pos.coords.longitude }
+        setDriverLocation(loc)
+        if (!locationReady) {
+          setViewState(prev => ({ ...prev, longitude: loc.lng, latitude: loc.lat }))
+          setLocationReady(true)
+        }
+      },
+      () => {},
+      { enableHighAccuracy: true, maximumAge: 10000, timeout: 5000 }
+    )
+    return () => navigator.geolocation.clearWatch(watchId)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  const handleCenter = () => {
+    setViewState(prev => ({
+      ...prev,
+      longitude: driverLocation.lng,
+      latitude: driverLocation.lat,
+      zoom: 15
+    }))
+  }
+
+  /* ─── Computed stats ─── */
+  const stats = useMemo(() => {
+    const delivered = inventory.filter(i => i.status === 'DELIVERED').length
+    const inTransit = inventory.filter(i => i.status === 'IN_TRANSIT').length
+    const totalActive = activeRuns.length
+    const urgentCount = activeRuns.filter(r => getHoursUntilExpiry(r.expiresAt) < 2).length
+    // Simulated metrics 
+    const co2Saved = delivered * 2.4 // kg per delivery
+    const efficiency = totalActive > 0 ? Math.min(98, 85 + Math.floor(Math.random() * 13)) : 0
+    return { delivered, inTransit, totalActive, urgentCount, co2Saved, efficiency }
+  }, [inventory, activeRuns])
 
   return (
-    <motion.div
-      className="space-y-6 max-w-[1200px] mx-auto pt-0"
-      variants={stagger}
-      initial="hidden"
-      animate="show"
-    >
-      <div className="grid lg:grid-cols-12 gap-8 relative">
-        
-        {/* Route List / Opportunity Feed */}
-        <div className="lg:col-span-5 flex flex-col h-[700px]">
-          <motion.div variants={fadeUp} className="mb-6">
-            <h2 className="text-[36px] font-extrabold text-[#153F2D] tracking-[-0.03em] mb-3">Active Missions</h2>
-            <p className="text-[15px] text-[#153F2D]/60 leading-relaxed max-w-[300px]">Multi-stop paths ordered by expiry urgency and AI priority.</p>
-          </motion.div>
+    <div className="w-full max-w-[1400px] mx-auto">
 
-          <div className="flex-1 overflow-y-auto pr-2 custom-scrollbar">
-            <div className="space-y-5">
-              <AnimatePresence mode="popLayout">
-                {activeRuns.map((item, index) => {
-                  const hoursToExpiry = getHoursUntilExpiry(item.expiresAt)
-                  const isUrgent = hoursToExpiry < 2
+      {/* ─── BENTO GRID ─── */}
+      <div className="grid grid-cols-12 gap-4 auto-rows-auto">
 
-                  return (
-                    <motion.div
-                      key={item.id}
-                      layout
-                      initial={{ opacity: 0, x: -16 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      exit={{ opacity: 0, x: -16 }}
-                      transition={{ type: "spring", stiffness: 300, damping: 30 }}
-                      className="group"
-                    >
-                      <div className={`relative overflow-hidden rounded-[2rem] bg-white/80 backdrop-blur-xl border border-[#153F2D]/5 shadow-sm p-5 flex flex-col transition-all duration-300 hover:shadow-[0_16px_32px_-12px_rgba(21,63,45,0.08)] hover:-translate-y-1 ${isUrgent ? 'bg-red-50/20' : ''}`}>
-                        
-                        {/* Food Image Header */}
-                        {item.imageUrl && (
-                          <div className="relative h-24 w-full rounded-xl overflow-hidden mb-4 -mt-1 shadow-inner">
-                            <Image 
-                              src={item.imageUrl} 
-                              alt={item.name} 
-                              fill 
-                              className="object-cover transition-transform duration-700 group-hover:scale-105"
-                              sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-                            />
-                            <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent pointer-events-none" />
-                            
-                            {/* Step & Urgent Overlays */}
-                            <div className="absolute top-2 left-2 flex gap-2">
-                               <div className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 text-[11px] font-extrabold shadow-sm ${isUrgent ? 'bg-[#D9534F] text-white' : 'bg-white text-[#153F2D]'}`}>
-                                 {index + 1}
-                               </div>
-                            </div>
-                            <div className="absolute top-2 right-2">
-                              {isUrgent && (
-                                <span className="bg-[#D9534F] text-white text-[9px] px-2 py-0.5 rounded-md uppercase tracking-widest font-extrabold shadow-sm border border-white/20 relative overflow-hidden flex items-center gap-1.5">
-                                  <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
-                                  Urgent
-                                </span>
-                              )}
-                            </div>
-                          </div>
-                        )}
+        {/* ══════════════════════════════════════════════
+            TILE 1: LIVE MAP  (8 cols, spans 2 rows)
+        ══════════════════════════════════════════════ */}
+        <BentoCard className="col-span-12 lg:col-span-8 row-span-2 h-[620px] relative" delay={0}>
+          {/* Map Header overlay */}
+          <div className="absolute top-0 left-0 right-0 z-10 p-5 flex items-center justify-between pointer-events-none">
+            <div className="flex items-center gap-3 bg-[#153F2D]/90 backdrop-blur-2xl rounded-2xl px-5 py-3 shadow-lg pointer-events-auto">
+              <Navigation2 className="w-5 h-5 text-[#EAB308]" />
+              <div>
+                <p className="text-[14px] font-extrabold text-white leading-tight">Dynamic Routing</p>
+                <p className="text-[10px] font-bold text-white/50 uppercase tracking-widest">Live GPS • {stats.totalActive} stops</p>
+              </div>
+            </div>
+            <button
+              onClick={handleCenter}
+              className="bg-white/95 backdrop-blur-xl text-[#153F2D] px-4 py-2.5 rounded-xl font-bold text-[12px] shadow-lg border border-[#153F2D]/5 flex items-center gap-2 hover:scale-105 transition-transform pointer-events-auto"
+            >
+              <Crosshair className="w-4 h-4" />
+              Re-center
+            </button>
+          </div>
 
-                        <div className="flex-1 min-w-0 mb-4">
-                          {!item.imageUrl && (
-                            <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 text-[12px] font-extrabold mb-3 shadow-sm ${isUrgent ? 'bg-[#D9534F] text-white' : 'bg-[#153F2D]/5 text-[#153F2D]'}`}>
-                              {index + 1}
-                            </div>
-                          )}
-                          <div className="flex items-start justify-between mb-1">
-                            <p className="text-[18px] font-extrabold text-[#153F2D] tracking-tight">{item.name}</p>
-                          </div>
-                          <div className="flex items-center gap-3 text-[12px] text-[#153F2D]/60 mt-1 font-bold">
-                            <div className="flex items-center gap-1.5">
-                              <Clock className="w-3.5 h-3.5" />
-                              <span>{hoursToExpiry}h left</span>
-                            </div>
-                            <div className="w-1 h-1 rounded-full bg-[#153F2D]/20" />
-                            <span className="uppercase tracking-widest text-[#153F2D]">{item.quantity} {item.unit}</span>
-                          </div>
-                        </div>
+          {/* Mapbox instance */}
+          <Map
+            {...viewState}
+            onMove={evt => setViewState(evt.viewState)}
+            mapboxAccessToken={process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN}
+            mapStyle="mapbox://styles/mapbox/dark-v11"
+            attributionControl={false}
+            style={{ width: '100%', height: '100%' }}
+          >
+            <NavigationControl position="bottom-right" showCompass={false} />
 
-                        <Button
-                          onClick={() => completeDelivery(item.id)}
-                          className="w-full bg-[#153F2D] hover:bg-[#113123] shadow-[0_8px_16px_rgba(21,63,45,0.2)] text-white transition-all font-extrabold tracking-widest uppercase text-[12px] py-5 rounded-[1.25rem]"
-                        >
-                          <CheckCircle2 className="w-4 h-4 mr-2 opacity-70" />
-                          Mark Delivered
-                        </Button>
-                      </div>
-                    </motion.div>
-                  )
-                })}
-              </AnimatePresence>
-              {activeRuns.length === 0 && (
-                <div className="py-24 text-center rounded-[2.5rem] border border-dashed border-[#153F2D]/10 bg-white/40 backdrop-blur-3xl shadow-sm">
-                  <div className="w-16 h-16 bg-white rounded-2xl flex items-center justify-center mx-auto mb-4 border border-[#153F2D]/5 shadow-sm">
-                    <Scan className="w-6 h-6 text-[#153F2D]/20 animate-pulse" />
+            {/* Driver Location */}
+            <Marker longitude={driverLocation.lng} latitude={driverLocation.lat} anchor="center">
+              <div className="relative">
+                <div className="w-11 h-11 rounded-full bg-[#EAB308]/20 flex items-center justify-center border-2 border-[#EAB308]/40">
+                  <div className="w-4 h-4 rounded-full bg-[#EAB308] shadow-[0_0_24px_rgba(234,179,8,0.7)]" />
+                </div>
+                <div className="absolute inset-0 bg-[#EAB308]/25 rounded-full animate-ping" />
+              </div>
+            </Marker>
+
+            {/* Mission Stop Pins */}
+            {activeRuns.map((run, idx) => (
+              <Marker key={run.id} longitude={run.location.lng} latitude={run.location.lat} anchor="bottom">
+                <div className="group cursor-pointer transition-transform hover:-translate-y-1">
+                  <div className="w-9 h-9 bg-[#5DB06D] rounded-full flex items-center justify-center shadow-[0_8px_16px_rgba(93,176,109,0.5)] border-2 border-white/30">
+                    <span className="text-white text-[14px] font-extrabold">{idx + 1}</span>
                   </div>
-                  <p className="text-[15px] font-extrabold text-[#153F2D]/60">No active runs assigned.</p>
-                  <p className="text-[13px] font-medium text-[#153F2D]/40 mt-1">Wait for dispatch alerts to appear.</p>
+                  <div className="w-0 h-0 border-l-[7px] border-r-[7px] border-t-[9px] border-transparent border-t-[#5DB06D] mx-auto -mt-[1px]" />
                 </div>
-              )}
-            </div>
-          </div>
-        </div>
+              </Marker>
+            ))}
+          </Map>
+        </BentoCard>
 
-        {/* ── Central Radar / Mission Map ── */}
-        <motion.div variants={fadeUp} className="lg:col-span-7 h-[700px] lg:-mt-[5.5rem] relative">
-          
-          {/* ── Top Bar: Logistics Status (Now isolated to map column) ── */}
-          <div className="flex justify-end mb-4">
-            <div className="flex items-center gap-4 bg-white/40 backdrop-blur-3xl border border-[#153F2D]/5 shadow-sm rounded-full pl-3 pr-4 py-1.5 hover:bg-white/60 transition-all">
-              <div className="flex items-center gap-2">
+        {/* ══════════════════════════════════════════════
+            TILE 2: ACTIVE MISSIONS  (4 cols, 2 rows)
+        ══════════════════════════════════════════════ */}
+        <BentoCard className="col-span-12 lg:col-span-4 row-span-2 h-[620px] flex flex-col" delay={0.08}>
+          <div className="p-6 pb-4 border-b border-[#153F2D]/5">
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-[22px] font-extrabold text-[#153F2D] tracking-tight">Active Runs</h2>
+                <p className="text-[12px] text-[#153F2D]/50 font-medium mt-0.5">Sorted by urgency</p>
+              </div>
+              <div className="flex items-center gap-2.5 bg-[#153F2D]/5 rounded-full px-3 py-1.5 border border-[#153F2D]/10">
                 <span className="relative flex h-2 w-2">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#EAB308] opacity-75"></span>
-                  <span className="relative inline-flex rounded-full h-2 w-2 bg-[#EAB308]"></span>
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#5DB06D] opacity-75" />
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-[#5DB06D]" />
                 </span>
-                <span className="text-[11px] font-bold uppercase tracking-wider text-[#153F2D]/70">Fleet Active</span>
-              </div>
-              <div className="h-4 w-px bg-[#153F2D]/10 mx-1" />
-              <div className="flex items-center gap-1.5 text-[12px] font-medium text-[#153F2D]">
-                <span>Online</span>
+                <span className="text-[10px] font-bold uppercase tracking-widest text-[#153F2D]/70">Fleet Online</span>
               </div>
             </div>
           </div>
 
-          <div className="rounded-[3rem] bg-white/40 backdrop-blur-[60px] shadow-[0_32px_64px_-12px_rgba(21,63,45,0.05)] border border-[#153F2D]/5 h-full relative overflow-hidden flex flex-col">
-            
-            {/* Map Header */}
-            <div className="p-6 flex justify-between items-center bg-white/60 backdrop-blur-3xl absolute top-0 w-full z-10 border-b border-[#153F2D]/5 shadow-sm">
-              <div className="flex items-center gap-4">
-                <div className="w-12 h-12 rounded-2xl bg-[#EAB308]/10 flex items-center justify-center border border-[#EAB308]/20">
-                  <Navigation2 className="w-5 h-5 text-[#EAB308]" />
+          <div className="flex-1 overflow-y-auto custom-scrollbar p-4 space-y-3">
+            <AnimatePresence mode="popLayout">
+              {activeRuns.map((item, index) => {
+                const hoursToExpiry = getHoursUntilExpiry(item.expiresAt)
+                const isUrgent = hoursToExpiry < 2
+
+                return (
+                  <motion.div
+                    key={item.id}
+                    layout
+                    initial={{ opacity: 0, x: -12 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: -12 }}
+                    transition={{ type: "spring", stiffness: 300, damping: 28 }}
+                    className={`rounded-2xl border p-4 transition-all hover:-translate-y-0.5 ${isUrgent ? 'bg-[#D9534F]/5 border-[#D9534F]/15' : 'bg-white border-[#153F2D]/5'}`}
+                  >
+                    <div className="flex items-start gap-3 mb-3">
+                      <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 text-[12px] font-extrabold ${isUrgent ? 'bg-[#D9534F] text-white' : 'bg-[#153F2D] text-white'}`}>
+                        {index + 1}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-extrabold text-[#153F2D] text-[15px] leading-tight truncate">{item.name}</p>
+                        <div className="flex items-center gap-2 text-[11px] text-[#153F2D]/50 font-bold mt-1">
+                          <Clock className="w-3 h-3" />
+                          <span>{hoursToExpiry}h</span>
+                          <span className="text-[#153F2D]/20">•</span>
+                          <span className="uppercase tracking-wider">{item.quantity} {item.unit}</span>
+                        </div>
+                      </div>
+                      {isUrgent && (
+                        <span className="bg-[#D9534F] text-white text-[9px] px-2 py-0.5 rounded-md uppercase tracking-widest font-extrabold animate-pulse shrink-0">
+                          Urgent
+                        </span>
+                      )}
+                    </div>
+                    <Button
+                      onClick={() => completeDelivery(item.id)}
+                      size="sm"
+                      className="w-full bg-[#153F2D] hover:bg-[#0f2d20] text-white font-extrabold tracking-widest uppercase text-[10px] py-4 rounded-xl shadow-sm"
+                    >
+                      <CheckCircle2 className="w-3.5 h-3.5 mr-1.5" />
+                      Confirm Pickup
+                    </Button>
+                  </motion.div>
+                )
+              })}
+            </AnimatePresence>
+
+            {activeRuns.length === 0 && (
+              <div className="py-16 text-center">
+                <div className="w-14 h-14 bg-[#153F2D]/5 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                  <Scan className="w-6 h-6 text-[#153F2D]/20 animate-pulse" />
                 </div>
-                <div>
-                  <p className="text-[16px] font-extrabold text-[#153F2D] leading-tight">Dynamic Routing</p>
-                  <p className="text-[12px] font-bold text-[#153F2D]/60 uppercase tracking-widest mt-0.5">Optimizing 5km Radius</p>
-                </div>
+                <p className="font-extrabold text-[#153F2D]/60 text-[15px]">Standby Mode</p>
+                <p className="text-[#153F2D]/40 text-[12px] font-medium mt-1">Awaiting dispatch orders</p>
               </div>
-              <div className="flex items-center gap-2 text-[12px] font-bold text-[#153F2D]/70 bg-white px-4 py-2 rounded-full border border-[#153F2D]/5 shadow-sm">
-                <div className="w-2 h-2 rounded-full bg-[#EAB308]" />
-                {activeRuns.length} Stops Remaining
-              </div>
+            )}
+          </div>
+        </BentoCard>
+
+        {/* ══════════════════════════════════════════════
+            ROW 2: STAT TILES  (3 × 4 cols)
+        ══════════════════════════════════════════════ */}
+
+        {/* Tile 3: Deliveries Completed */}
+        <BentoCard className="col-span-6 sm:col-span-4 p-6" delay={0.16}>
+          <div className="flex items-start justify-between mb-4">
+            <div className="w-11 h-11 rounded-2xl bg-[#5DB06D]/10 flex items-center justify-center">
+              <CheckCircle2 className="w-5 h-5 text-[#5DB06D]" />
             </div>
-
-            {/* Map Body Simulation */}
-            <div className="flex-1 bg-[#FDFBF7] flex items-center justify-center relative overflow-hidden">
-              {/* Minimalist Grid Pattern */}
-              <div className="absolute inset-0" style={{
-                backgroundImage: 'linear-gradient(to right, #153F2D06 1px, transparent 1px), linear-gradient(to bottom, #153F2D06 1px, transparent 1px)',
-                backgroundSize: '40px 40px',
-              }} />
-              
-              {/* Radar Rings */}
-              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[300px] h-[300px] rounded-full border border-[#153F2D]/5" />
-              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] rounded-full border border-[#153F2D]/5" />
-              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[700px] rounded-full border border-[#153F2D]/5" />
-
-              {/* Simulated route elements */}
-              <div className="absolute inset-0 z-10">
-                {activeRuns.length > 0 && (
-                  <>
-                    <div className="absolute top-1/3 left-1/4 w-8 h-8 rounded-full bg-[#D9534F]/10 flex items-center justify-center animate-pulse">
-                      <div className="w-3 h-3 rounded-full bg-[#D9534F] ring-4 ring-white shadow-sm" />
-                    </div>
-                    
-                    <div className="absolute top-1/2 left-1/2 w-8 h-8 rounded-full bg-[#5DB06D]/10 flex items-center justify-center" style={{ animationDelay: "0.5s" }}>
-                      <div className="w-4 h-4 rounded-full bg-[#5DB06D] ring-4 ring-white shadow-sm" />
-                    </div>
-                    
-                    <div className="absolute top-[60%] right-1/3 w-8 h-8 rounded-full bg-[#EAB308]/10 flex items-center justify-center animate-pulse" style={{ animationDelay: "1s" }}>
-                      <div className="w-3 h-3 rounded-full bg-[#EAB308] ring-4 ring-white shadow-sm" />
-                    </div>
-                    
-                    {/* Simulated route line */}
-                    <svg className="absolute inset-0 w-full h-full pointer-events-none" xmlns="http://www.w3.org/2000/svg">
-                      <path d="M 25% 33% Q 40% 40% 50% 50% T 66% 60%" fill="none" stroke="#EAB308" strokeOpacity="0.4" strokeWidth="3" strokeDasharray="8 8" className="animate-dash" />
-                    </svg>
-                  </>
-                )}
-              </div>
-
-              {/* Center Map Placeholder text */}
-              <div className="relative z-20 bg-white/90 px-8 py-6 rounded-[2rem] shadow-sm border border-[#153F2D]/5 backdrop-blur-2xl text-center max-w-[280px]">
-                <div className="w-14 h-14 rounded-2xl bg-white border border-[#153F2D]/5 shadow-sm flex items-center justify-center mx-auto mb-4">
-                  <MapPin className="w-6 h-6 text-[#153F2D]/30" />
-                </div>
-                <h3 className="text-[18px] font-extrabold text-[#153F2D] mb-1.5">Live Navigation</h3>
-                <p className="text-[13px] font-medium text-[#153F2D]/50 leading-relaxed">
-                  Mapbox GL will render traffic-aware, multi-stop optimized routes here.
-                </p>
-              </div>
+            <div className="flex items-center gap-1.5 text-[#5DB06D] text-[11px] font-bold bg-[#5DB06D]/10 px-2.5 py-1 rounded-lg">
+              <TrendingUp className="w-3 h-3" />
+              Today
             </div>
           </div>
-        </motion.div>
+          <p className="text-[36px] font-extrabold text-[#153F2D] tracking-tight leading-none">{stats.delivered}</p>
+          <p className="text-[12px] font-bold text-[#153F2D]/40 uppercase tracking-widest mt-2">Deliveries Done</p>
+        </BentoCard>
+
+        {/* Tile 4: CO₂ Saved */}
+        <BentoCard className="col-span-6 sm:col-span-4 p-6" delay={0.20}>
+          <div className="flex items-start justify-between mb-4">
+            <div className="w-11 h-11 rounded-2xl bg-[#EAB308]/10 flex items-center justify-center">
+              <Leaf className="w-5 h-5 text-[#EAB308]" />
+            </div>
+            <div className="flex items-center gap-1.5 text-[#EAB308] text-[11px] font-bold bg-[#EAB308]/10 px-2.5 py-1 rounded-lg">
+              <Zap className="w-3 h-3" />
+              Impact
+            </div>
+          </div>
+          <p className="text-[36px] font-extrabold text-[#153F2D] tracking-tight leading-none">{stats.co2Saved.toFixed(1)}<span className="text-[18px] text-[#153F2D]/40 ml-1">kg</span></p>
+          <p className="text-[12px] font-bold text-[#153F2D]/40 uppercase tracking-widest mt-2">CO₂ Diverted</p>
+        </BentoCard>
+
+        {/* Tile 5: Fleet Status */}
+        <BentoCard className="col-span-12 sm:col-span-4 p-6" delay={0.24}>
+          <div className="flex items-start justify-between mb-4">
+            <div className="w-11 h-11 rounded-2xl bg-[#153F2D]/5 flex items-center justify-center">
+              <Truck className="w-5 h-5 text-[#153F2D]/60" />
+            </div>
+            <div className="flex items-center gap-1.5 text-[#153F2D]/60 text-[11px] font-bold bg-[#153F2D]/5 px-2.5 py-1 rounded-lg">
+              <Shield className="w-3 h-3" />
+              Status
+            </div>
+          </div>
+          <div className="flex items-end gap-3">
+            <p className="text-[36px] font-extrabold text-[#153F2D] tracking-tight leading-none">{stats.inTransit}</p>
+            <p className="text-[14px] font-bold text-[#153F2D]/30 mb-1">in transit</p>
+          </div>
+          <div className="flex items-center gap-2 mt-3">
+            <div className="flex-1 h-2 rounded-full bg-[#153F2D]/5 overflow-hidden">
+              <motion.div
+                className="h-full rounded-full bg-gradient-to-r from-[#153F2D] to-[#5DB06D]"
+                initial={{ width: 0 }}
+                animate={{ width: stats.totalActive > 0 ? `${(stats.inTransit / Math.max(stats.totalActive, 1)) * 100}%` : '0%' }}
+                transition={{ duration: 1, delay: 0.5 }}
+              />
+            </div>
+            <span className="text-[11px] font-bold text-[#153F2D]/40">{stats.totalActive > 0 ? Math.round((stats.inTransit / stats.totalActive) * 100) : 0}%</span>
+          </div>
+        </BentoCard>
       </div>
-    </motion.div>
+    </div>
   )
 }

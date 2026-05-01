@@ -2,13 +2,13 @@ import { useSurplusStore } from "@/store/useSurplusStore";
 import { toast } from "sonner";
 
 export function useDriver() {
-  const { inventory, markAsDelivered } = useSurplusStore();
+  const { inventory, updateItemStatus } = useSurplusStore();
   
   const activeRuns = inventory.filter(item => item.status === 'CLAIMED' || item.status === 'IN_TRANSIT');
 
-  const completeDelivery = (id: string) => {
+  const completeDelivery = async (id: string) => {
     try {
-      markAsDelivered(id);
+      await updateItemStatus(id, 'DELIVERED');
       toast.success("Delivery Confirmed", {
         description: "Chain of custody updated. Liability waiver generated."
       });

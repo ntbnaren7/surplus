@@ -7,7 +7,7 @@ export function useDonor() {
   
   const activeSurplus = inventory.filter(item => item.status === 'AVAILABLE');
 
-  const simulateDrop = () => {
+  const simulateDrop = async () => {
     // 1. Construct raw payload (simulating incoming data from POS)
     const rawPayload = {
       name: 'Assorted Pastries',
@@ -30,14 +30,14 @@ export function useDonor() {
 
     const validData: POSDropPayload = result.data;
     
-    addSimulatedPOSDrop();
+    await addSimulatedPOSDrop();
     toast.success("POS Sync Successful", {
       description: `Automatically detected ${validData.quantity} ${validData.unit} of ${validData.name}.`
     });
   };
 
-  const submitManualDrop = (name: string, quantity: number, unit: any, hoursUntilExpiry: number) => {
-    addManualDrop({
+  const submitManualDrop = async (name: string, quantity: number, unit: any, hoursUntilExpiry: number) => {
+    await addManualDrop({
       name,
       quantity,
       unit,

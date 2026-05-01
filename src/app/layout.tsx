@@ -25,6 +25,8 @@ export const metadata: Metadata = {
   description: "Match surplus perishable food to demand centres using expiry-aware routing.",
 };
 
+import { SupabaseSyncProvider } from "@/components/providers/SupabaseSyncProvider";
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -36,7 +38,9 @@ export default function RootLayout({
       className={`dark ${geistSans.variable} ${geistMono.variable} ${playfair.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col bg-background text-foreground selection:bg-primary selection:text-primary-foreground">
-        {children}
+        <SupabaseSyncProvider>
+          {children}
+        </SupabaseSyncProvider>
         <Toaster theme="dark" position="bottom-right" richColors />
       </body>
     </html>

@@ -37,7 +37,7 @@ function calculatePriorityScore(hoursToExpiry: number, distanceKm: number): numb
 }
 
 export function useReceiver() {
-  const { inventory, claimItem } = useSurplusStore();
+  const { inventory, updateItemStatus } = useSurplusStore();
   
   // Mock Receiver Location (a shelter near downtown)
   const RECEIVER_LOCATION = { lat: 40.7180, lng: -74.0080 };
@@ -60,9 +60,9 @@ export function useReceiver() {
     item => item.status === 'CLAIMED' || item.status === 'IN_TRANSIT'
   );
 
-  const claimSurplus = (id: string) => {
+  const claimSurplus = async (id: string) => {
     try {
-      claimItem(id);
+      await updateItemStatus(id, 'CLAIMED');
       toast.success("Batch Claimed Successfully", {
         description: "A driver has been dispatched and will arrive shortly."
       });
