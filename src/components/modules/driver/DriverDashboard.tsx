@@ -4,13 +4,14 @@ import { useDriver } from "@/hooks/useDriver"
 import { useDriverRadar } from "@/hooks/useDriverRadar"
 import { useSurplusStore } from "@/store/useSurplusStore"
 import { getHoursUntilExpiry } from "@/utils/time"
+import { optimizeRoute, type OptimizedRoute } from "@/lib/routing"
 import { Button } from "@/components/ui/button"
 import { ComplianceModal } from "@/components/ui/ComplianceModal"
 import { motion, AnimatePresence } from "framer-motion"
-import { Navigation2, CheckCircle2, Clock, Scan, Crosshair, Leaf, Zap, TrendingUp, Truck, Package, Shield } from "lucide-react"
-import Map, { Marker, NavigationControl } from 'react-map-gl/mapbox'
+import { Navigation2, CheckCircle2, Clock, Scan, Crosshair, Leaf, Zap, TrendingUp, Truck, Package, Shield, Brain, Route } from "lucide-react"
+import MapGL, { Marker, NavigationControl, Source, Layer } from 'react-map-gl/mapbox'
 import 'mapbox-gl/dist/mapbox-gl.css'
-import { useState, useEffect, useMemo } from "react"
+import { useState, useEffect, useMemo, useCallback } from "react"
 
 /* ─── Bento card wrapper ─── */
 function BentoCard({ children, className = "", delay = 0 }: { children: React.ReactNode; className?: string; delay?: number }) {
@@ -94,11 +95,45 @@ export function DriverDashboardModule() {
     const inTransit = inventory.filter(i => i.status === 'IN_TRANSIT').length
     const totalActive = activeRuns.length
     const urgentCount = activeRuns.filter(r => getHoursUntilExpiry(r.expiresAt) < 2).length
-    // Simulated metrics 
-    const co2Saved = delivered * 2.4 // kg per delivery
+    const co2Saved = delivered * 2.4
     const efficiency = totalActive > 0 ? Math.min(98, 85 + Math.floor(Math.random() * 13)) : 0
     return { delivered, inTransit, totalActive, urgentCount, co2Saved, efficiency }
   }, [inventory, activeRuns])
+
+  /* ─── Neural Navigator: Route Optimization ─── */
+  const [optimizedRoute, setOptimizedRoute] = useState<OptimizedRoute | null>(null)
+  const [isOptimizing, setIsOptimizing] = useState(false)
+
+  const runOptimizer = useCallback(async () => {
+    setIsOptimizing(true)
+    // Simulate AI processing delay
+    await new Promise(resolve => setTimeout(resolve, 1200))
+    const result = optimizeRoute(driverLocation, activeRuns)
+    setOptimizedRoute(result)
+    setIsOptimizing(false)
+  }, [driverLocation, activeRuns])
+
+  // GeoJSON for the route line
+  const routeGeoJSON = useMemo(() => {
+    if (!optimizedRoute || optimizedRoute.routeCoordinates.length < 2) return null
+    return {
+      type: 'Feature' as const,
+      properties: {},
+      geometry: {
+        type: 'LineString' as const,
+        coordinates: optimizedRoute.routeCoordinates,
+      }
+    }
+  }, [optimizedRoute])
+
+  // Map from stop id to optimized index
+  const stopOrderMap = useMemo(() => {
+    const map = new Map<string, number>()
+    if (optimizedRoute) {
+      optimizedRoute.stops.forEach((stop, idx) => map.set(stop.id, idx + 1))
+    }
+    return map
+  }, [optimizedRoute])
 
   return (
     <div className="w-full max-w-[1400px] mx-auto">
@@ -128,8 +163,85 @@ export function DriverDashboardModule() {
             </button>
           </div>
 
+          {/* Neural Navigator Optimizer Panel */}
+          <div className="absolute bottom-4 left-4 right-4 z-10 pointer-events-none">
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.3 }}
+              className="bg-[#0a0a0a]/90 backdrop-blur-2xl rounded-2xl p-4 shadow-lg border border-white/5 pointer-events-auto"
+            >
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#7C3AED] to-[#5B21B6] flex items-center justify-center shadow-[0_4px_12px_rgba(124,58,237,0.4)]">
+                    <Brain className="w-4 h-4 text-white" />
+                  </div>
+                  <div>
+                    <p className="text-[12px] font-extrabold text-white leading-tight">Neural Navigator</p>
+                    {optimizedRoute ? (
+                      <div className="flex items-center gap-2 text-[10px] text-white/50 font-bold">
+                        <span>{optimizedRoute.totalDistance}km</span>
+                        <span className="text-white/20">•</span>
+                        <span>{optimizedRoute.estimatedTime}min</span>
+                        <span className="text-white/20">•</span>
+                        <span className="text-[#5DB06D]">{optimizedRoute.timeSaved}min saved</span>
+                      </div>
+                    ) : (
+                      <p className="text-[10px] text-white/40 font-bold">Expiry-weighted path optimizer</p>
+                    )}
+                  </div>
+                </div>
+                <button
+                  onClick={runOptimizer}
+                  disabled={isOptimizing || activeRuns.length === 0}
+                  className={`flex items-center gap-2 px-4 py-2 rounded-xl text-[10px] font-extrabold uppercase tracking-widest transition-all ${
+                    isOptimizing
+                      ? 'bg-[#7C3AED]/20 text-[#7C3AED] cursor-wait'
+                      : activeRuns.length === 0
+                      ? 'bg-white/5 text-white/20 cursor-not-allowed'
+                      : 'bg-[#7C3AED] text-white shadow-[0_4px_12px_rgba(124,58,237,0.4)] hover:bg-[#6D28D9]'
+                  }`}
+                >
+                  {isOptimizing ? (
+                    <>
+                      <motion.div
+                        className="w-3 h-3 border-2 border-[#7C3AED] border-t-transparent rounded-full"
+                        animate={{ rotate: 360 }}
+                        transition={{ duration: 0.8, repeat: Infinity, ease: 'linear' }}
+                      />
+                      Optimizing...
+                    </>
+                  ) : (
+                    <>
+                      <Route className="w-3.5 h-3.5" />
+                      {optimizedRoute ? 'Re-Optimize' : 'Optimize Route'}
+                    </>
+                  )}
+                </button>
+              </div>
+
+              {/* Optimization Score Bar */}
+              {optimizedRoute && (
+                <div className="mt-3 pt-3 border-t border-white/5">
+                  <div className="flex items-center justify-between mb-1.5">
+                    <span className="text-[9px] font-extrabold uppercase tracking-widest text-white/30">Route Efficiency</span>
+                    <span className="text-[10px] font-extrabold text-[#5DB06D]">{optimizedRoute.optimizationScore}%</span>
+                  </div>
+                  <div className="h-1 w-full bg-white/5 rounded-full overflow-hidden">
+                    <motion.div
+                      className="h-full rounded-full bg-gradient-to-r from-[#7C3AED] to-[#5DB06D]"
+                      initial={{ width: 0 }}
+                      animate={{ width: `${optimizedRoute.optimizationScore}%` }}
+                      transition={{ duration: 1 }}
+                    />
+                  </div>
+                </div>
+              )}
+            </motion.div>
+          </div>
+
           {/* Mapbox instance */}
-          <Map
+          <MapGL
             {...viewState}
             onMove={evt => setViewState(evt.viewState)}
             mapboxAccessToken={process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN}
@@ -149,18 +261,43 @@ export function DriverDashboardModule() {
               </div>
             </Marker>
 
-            {/* Mission Stop Pins */}
-            {activeRuns.map((run, idx) => (
-              <Marker key={run.id} longitude={run.location.lng} latitude={run.location.lat} anchor="bottom">
-                <div className="group cursor-pointer transition-transform hover:-translate-y-1">
-                  <div className="w-9 h-9 bg-[#5DB06D] rounded-full flex items-center justify-center shadow-[0_8px_16px_rgba(93,176,109,0.5)] border-2 border-white/30">
-                    <span className="text-white text-[14px] font-extrabold">{idx + 1}</span>
+            {/* Mission Stop Pins (numbered by AI-optimized order) */}
+            {activeRuns.map((run, idx) => {
+              const optimizedIdx = stopOrderMap.get(run.id) ?? (idx + 1)
+              const stop = optimizedRoute?.stops.find(s => s.id === run.id)
+              const isUrgentStop = stop?.urgencyClass === 'critical'
+              return (
+                <Marker key={run.id} longitude={run.location.lng} latitude={run.location.lat} anchor="bottom">
+                  <div className="group cursor-pointer transition-transform hover:-translate-y-1">
+                    <div className={`w-9 h-9 rounded-full flex items-center justify-center shadow-[0_8px_16px_rgba(93,176,109,0.5)] border-2 border-white/30 ${
+                      isUrgentStop ? 'bg-[#D9534F]' : 'bg-[#5DB06D]'
+                    }`}>
+                      <span className="text-white text-[14px] font-extrabold">{optimizedIdx}</span>
+                    </div>
+                    <div className={`w-0 h-0 border-l-[7px] border-r-[7px] border-t-[9px] border-transparent mx-auto -mt-[1px] ${
+                      isUrgentStop ? 'border-t-[#D9534F]' : 'border-t-[#5DB06D]'
+                    }`} />
                   </div>
-                  <div className="w-0 h-0 border-l-[7px] border-r-[7px] border-t-[9px] border-transparent border-t-[#5DB06D] mx-auto -mt-[1px]" />
-                </div>
-              </Marker>
-            ))}
-          </Map>
+                </Marker>
+              )
+            })}
+
+            {/* Optimized Route Line */}
+            {routeGeoJSON && (
+              <Source id="route-line" type="geojson" data={routeGeoJSON}>
+                <Layer
+                  id="route-line-layer"
+                  type="line"
+                  paint={{
+                    'line-color': '#7C3AED',
+                    'line-width': 3,
+                    'line-opacity': 0.8,
+                    'line-dasharray': [2, 1],
+                  }}
+                />
+              </Source>
+            )}
+          </MapGL>
         </BentoCard>
 
         {/* ══════════════════════════════════════════════

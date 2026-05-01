@@ -4,10 +4,11 @@ import { useReceiver } from "@/hooks/useReceiver"
 import { useReceiverRadar } from "@/hooks/useReceiverRadar"
 import { useSurplusStore } from "@/store/useSurplusStore"
 import { getHoursUntilExpiry } from "@/utils/time"
+import { calculateMatchScores, type MatchResult } from "@/lib/matching"
 import { Button } from "@/components/ui/button"
 import { motion, AnimatePresence } from "framer-motion"
-import { Clock, Navigation, CheckCircle2, Package, Truck, Zap, Activity, Crosshair, Leaf, TrendingUp } from "lucide-react"
-import Map, { Marker, NavigationControl } from 'react-map-gl/mapbox'
+import { Clock, Navigation, CheckCircle2, Package, Truck, Zap, Activity, Crosshair, Leaf, TrendingUp, Brain } from "lucide-react"
+import MapGL, { Marker, NavigationControl } from 'react-map-gl/mapbox'
 import 'mapbox-gl/dist/mapbox-gl.css'
 import { useState, useEffect, useMemo } from "react"
 
@@ -29,6 +30,15 @@ export function ReceiverDashboardModule() {
   const { availableItems, incomingItems, claimSurplus } = useReceiver()
   const { inventory } = useSurplusStore()
   const { driverPositions } = useReceiverRadar()
+
+  /* ─── Smart Match Engine ─── */
+  const matchScores = useMemo(() => {
+    if (availableItems.length === 0) return new Map<string, MatchResult>()
+    const results = calculateMatchScores(availableItems)
+    const map = new Map<string, MatchResult>()
+    results.forEach(r => map.set(r.itemId, r))
+    return map
+  }, [availableItems])
 
   /* ─── Geolocation (Receiver facility) ─── */
   const [facilityLocation, setFacilityLocation] = useState({ lat: 40.7180, lng: -74.0080 })
@@ -108,7 +118,7 @@ export function ReceiverDashboardModule() {
           </div>
 
           {/* Mapbox instance */}
-          <Map
+          <MapGL
             {...viewState}
             onMove={evt => setViewState(evt.viewState)}
             mapboxAccessToken={process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN}
@@ -173,7 +183,7 @@ export function ReceiverDashboardModule() {
                 </div>
               </Marker>
             ))}
-          </Map>
+          </MapGL>
         </BentoCard>
 
         {/* ══════════════════════════════════════════════
@@ -184,7 +194,7 @@ export function ReceiverDashboardModule() {
             <div className="flex items-center justify-between">
               <div>
                 <h2 className="text-[22px] font-extrabold text-[#153F2D] tracking-tight">Surplus Feed</h2>
-                <p className="text-[12px] text-[#153F2D]/50 font-medium mt-0.5">AI-prioritized by urgency</p>
+                <p className="text-[12px] text-[#153F2D]/50 font-medium mt-0.5">AI-matched to your facility profile</p>
               </div>
               <div className="flex items-center gap-2.5 bg-[#5DB06D]/10 rounded-full px-3 py-1.5 border border-[#5DB06D]/20">
                 <span className="relative flex h-2 w-2">
@@ -242,18 +252,40 @@ export function ReceiverDashboardModule() {
                       )}
                     </div>
 
-                    {/* Priority Score Bar */}
+                    {/* Priority Score Bar — now powered by Smart Match */}
                     <div className="mb-3">
                       <div className="flex justify-between items-center mb-1">
-                        <span className="text-[9px] font-extrabold uppercase tracking-widest text-[#153F2D]/30">Match Score</span>
-                        <span className="text-[10px] font-bold text-[#5DB06D]">{Math.round(confidenceWidth)}%</span>
+                        <div className="flex items-center gap-1.5">
+                          <Brain className="w-3 h-3 text-[#7C3AED]/60" />
+                          <span className="text-[9px] font-extrabold uppercase tracking-widest text-[#153F2D]/30">Smart Match</span>
+                        </div>
+                        {(() => {
+                          const match = matchScores.get(item.id)
+                          if (!match) return <span className="text-[10px] font-bold text-[#5DB06D]">{Math.round(confidenceWidth)}%</span>
+                          const gradeColor = match.matchGrade === 'A+' ? 'text-[#5DB06D] bg-[#5DB06D]/10' :
+                            match.matchGrade === 'A' ? 'text-[#5DB06D] bg-[#5DB06D]/10' :
+                            match.matchGrade === 'B' ? 'text-[#EAB308] bg-[#EAB308]/10' :
+                            'text-[#153F2D]/50 bg-[#153F2D]/5'
+                          return (
+                            <div className="flex items-center gap-1.5">
+                              <span className="text-[10px] font-bold text-[#7C3AED]">{match.matchScore}%</span>
+                              <span className={`text-[9px] px-1.5 py-0.5 rounded font-extrabold ${gradeColor}`}>{match.matchGrade}</span>
+                            </div>
+                          )
+                        })()}
                       </div>
                       <div className="h-1 w-full bg-[#153F2D]/5 rounded-full overflow-hidden">
                         <div
-                          className="h-full bg-gradient-to-r from-[#5DB06D] to-[#153F2D] rounded-full transition-all duration-1000"
-                          style={{ width: `${confidenceWidth}%` }}
+                          className="h-full bg-gradient-to-r from-[#7C3AED] to-[#5DB06D] rounded-full transition-all duration-1000"
+                          style={{ width: `${matchScores.get(item.id)?.matchScore ?? confidenceWidth}%` }}
                         />
                       </div>
+                      {/* Reasoning tooltip */}
+                      {matchScores.get(item.id) && (
+                        <p className="text-[9px] text-[#7C3AED]/60 font-medium mt-1.5 leading-relaxed">
+                          {matchScores.get(item.id)!.reasoning}
+                        </p>
+                      )}
                     </div>
 
                     <Button
