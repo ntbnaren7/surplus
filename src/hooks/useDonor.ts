@@ -3,7 +3,7 @@ import { posDropPayloadSchema, type POSDropPayload } from "@/lib/validations/foo
 import { toast } from "sonner";
 
 export function useDonor() {
-  const { inventory, addSimulatedPOSDrop } = useSurplusStore();
+  const { inventory, addSimulatedPOSDrop, addManualDrop } = useSurplusStore();
   
   const activeSurplus = inventory.filter(item => item.status === 'AVAILABLE');
 
@@ -36,8 +36,21 @@ export function useDonor() {
     });
   };
 
+  const submitManualDrop = (name: string, quantity: number, unit: any, hoursUntilExpiry: number) => {
+    addManualDrop({
+      name,
+      quantity,
+      unit,
+      expiresAt: new Date(Date.now() + hoursUntilExpiry * 60 * 60 * 1000).toISOString()
+    });
+    toast.success("Surplus Broadcasted", {
+      description: `Added ${quantity} ${unit} of ${name} to the network.`
+    });
+  };
+
   return {
     activeSurplus,
-    simulateDrop
+    simulateDrop,
+    submitManualDrop
   };
 }

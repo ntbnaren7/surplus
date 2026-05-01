@@ -22,7 +22,7 @@ export function DriverDashboardModule() {
 
   return (
     <motion.div
-      className="grid lg:grid-cols-5 gap-6"
+      className="grid lg:grid-cols-5 gap-8 max-w-[1200px] mx-auto pt-8"
       variants={stagger}
       initial="hidden"
       animate="show"
@@ -30,11 +30,11 @@ export function DriverDashboardModule() {
       {/* Route List */}
       <motion.div variants={fadeUp} className="lg:col-span-2 space-y-6">
         <div>
-          <h2 className="text-lg font-semibold tracking-tight text-foreground">Route Queue</h2>
-          <p className="text-[13px] text-muted-foreground mt-0.5">Ordered by expiry urgency.</p>
+          <h2 className="text-[20px] font-bold tracking-[-0.02em] text-[#1A3C34]">Route Queue</h2>
+          <p className="text-[13px] text-[#1A3C34]/60 mt-1">Multi-stop paths ordered by expiry urgency.</p>
         </div>
 
-        <div className="space-y-2">
+        <div className="space-y-4">
           <AnimatePresence mode="popLayout">
             {activeRuns.map((item, index) => {
               const hoursToExpiry = getHoursUntilExpiry(item.expiresAt)
@@ -49,30 +49,28 @@ export function DriverDashboardModule() {
                   exit={{ opacity: 0, x: -16 }}
                   transition={{ type: "spring", stiffness: 300, damping: 30 }}
                 >
-                  <div className={`glow-border rounded-xl border bg-white/[0.02] p-4 transition-all duration-300 hover:bg-white/[0.04] ${isUrgent ? 'border-red-500/20' : 'border-white/[0.06]'}`}>
-                    <div className="flex items-start gap-3.5">
+                  <div className={`rounded-2xl bg-white/80 backdrop-blur-xl shadow-glass ring-1 p-5 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-md ${isUrgent ? 'ring-red-500/30 bg-red-50/50' : 'ring-[#1A3C34]/10'}`}>
+                    <div className="flex items-start gap-4">
                       {/* Step indicator */}
-                      <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 text-xs font-bold font-mono ${isUrgent ? 'bg-red-500/10 text-red-400 border border-red-500/20' : 'bg-blue-500/[0.08] text-blue-400 border border-blue-500/10'}`}>
+                      <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 text-[14px] font-bold font-mono ${isUrgent ? 'bg-red-500 text-white shadow-[0_4px_12px_rgba(239,68,68,0.4)]' : 'bg-[#1A3C34] text-white shadow-sm'}`}>
                         {index + 1}
                       </div>
 
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center justify-between mb-1">
-                          <p className="text-[14px] font-medium text-foreground truncate">{item.name}</p>
-                          {isUrgent && <AlertTriangle className="w-3.5 h-3.5 text-red-400 animate-breathe shrink-0" />}
+                          <p className="text-[15px] font-bold text-[#1A3C34] truncate">{item.name}</p>
+                          {isUrgent && <AlertTriangle className="w-4 h-4 text-red-500 animate-breathe shrink-0" />}
                         </div>
-                        <div className="flex items-center gap-3 text-xs text-muted-foreground mb-3">
-                          <span className="font-mono">{hoursToExpiry}h left</span>
-                          <span className="text-white/10">·</span>
-                          <span>Donor {index + 1} → Shelter A</span>
+                        <div className="flex items-center gap-2 text-[12px] text-[#1A3C34]/60 mb-4 font-mono">
+                          <span>{hoursToExpiry}h left</span>
+                          <span className="text-[#1A3C34]/20">•</span>
+                          <span>{item.quantity} {item.unit}</span>
                         </div>
                         <Button
                           onClick={() => completeDelivery(item.id)}
-                          variant="outline"
-                          size="sm"
-                          className="w-full h-8 text-xs"
+                          className="w-full bg-[#F5F0EB] hover:bg-[#1A3C34] text-[#1A3C34] hover:text-white border border-[#1A3C34]/10 transition-all font-bold tracking-wide uppercase text-[11px] py-4 rounded-xl shadow-sm"
                         >
-                          <CheckCircle2 className="w-3 h-3" />
+                          <CheckCircle2 className="w-4 h-4 mr-2" />
                           Mark Delivered
                         </Button>
                       </div>
@@ -83,9 +81,10 @@ export function DriverDashboardModule() {
             })}
           </AnimatePresence>
           {activeRuns.length === 0 && (
-            <div className="py-16 text-center rounded-2xl border border-dashed border-white/[0.06]">
-              <Route className="w-8 h-8 text-muted-foreground/30 mx-auto mb-3" />
-              <p className="text-sm text-muted-foreground">No active runs assigned.</p>
+            <div className="py-20 text-center rounded-[2rem] border border-dashed border-[#1A3C34]/20 bg-white/30 backdrop-blur-md">
+              <Route className="w-10 h-10 text-[#1A3C34]/20 mx-auto mb-4" />
+              <p className="text-[15px] font-medium text-[#1A3C34]/60">No active runs assigned.</p>
+              <p className="text-[12px] text-[#1A3C34]/40 mt-1">Wait for dispatch alerts.</p>
             </div>
           )}
         </div>
@@ -93,51 +92,63 @@ export function DriverDashboardModule() {
 
       {/* Map View */}
       <motion.div variants={fadeUp} className="lg:col-span-3">
-        <div className="glow-border rounded-2xl border border-white/[0.06] bg-white/[0.02] h-[640px] relative overflow-hidden flex flex-col">
+        <div className="rounded-[2rem] bg-white/80 backdrop-blur-xl shadow-glass ring-1 ring-[#1A3C34]/10 h-[640px] relative overflow-hidden flex flex-col">
           {/* Map header overlay */}
-          <div className="p-4 flex justify-between items-center bg-black/60 backdrop-blur-xl absolute top-0 w-full z-10 border-b border-white/[0.04]">
-            <div className="flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-lg bg-blue-500/[0.08] border border-blue-500/10 flex items-center justify-center">
-                <Navigation2 className="w-4 h-4 text-blue-400" />
+          <div className="p-5 flex justify-between items-center bg-white/60 backdrop-blur-md absolute top-0 w-full z-10 border-b border-[#1A3C34]/5">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-[#2D7A3A]/10 flex items-center justify-center">
+                <Navigation2 className="w-5 h-5 text-[#2D7A3A]" />
               </div>
               <div>
-                <p className="text-[13px] font-semibold text-foreground">Turn-by-Turn</p>
-                <p className="text-[11px] text-muted-foreground font-mono">Multi-stop optimized</p>
+                <p className="text-[14px] font-bold text-[#1A3C34]">Turn-by-Turn</p>
+                <p className="text-[11px] text-[#1A3C34]/60 font-mono">Multi-stop optimized</p>
               </div>
             </div>
-            <Badge variant="secondary" className="font-mono">
+            <Badge variant="outline" className="font-mono bg-white text-[#1A3C34] border-[#1A3C34]/10 shadow-sm px-3 py-1 text-[12px]">
               {activeRuns.length} stops
             </Badge>
           </div>
 
-          {/* Map body */}
-          <div className="flex-1 bg-[#050505] flex items-center justify-center relative">
-            {/* Simulated map grid */}
-            <div className="absolute inset-0 bg-grid opacity-40" />
+          {/* Map body - High-End Simulation */}
+          <div className="flex-1 bg-[#F5F0EB] flex items-center justify-center relative overflow-hidden">
+            {/* Very faint map-like grid/texture for premium feel */}
+            <div className="absolute inset-0 glass-noise opacity-50" />
+            <div className="absolute inset-0" style={{
+              backgroundImage: 'radial-gradient(#1A3C34 0.5px, transparent 0.5px)',
+              backgroundSize: '24px 24px',
+              opacity: 0.05
+            }} />
+            
             {/* Simulated route dots */}
             <div className="absolute inset-0">
               {activeRuns.length > 0 && (
                 <>
-                  <div className="absolute top-1/3 left-1/4 w-3 h-3 rounded-full bg-blue-400/60 animate-ping" />
-                  <div className="absolute top-1/3 left-1/4 w-2 h-2 rounded-full bg-blue-400" />
-                  <div className="absolute top-1/2 left-1/2 w-3 h-3 rounded-full bg-emerald-400/60 animate-ping" style={{ animationDelay: "0.5s" }} />
-                  <div className="absolute top-1/2 left-1/2 w-2 h-2 rounded-full bg-emerald-400" />
-                  <div className="absolute top-2/3 right-1/3 w-3 h-3 rounded-full bg-amber-400/60 animate-ping" style={{ animationDelay: "1s" }} />
-                  <div className="absolute top-2/3 right-1/3 w-2 h-2 rounded-full bg-amber-400" />
+                  <div className="absolute top-1/3 left-1/4 w-4 h-4 rounded-full bg-[#1A3C34]/20 animate-ping" />
+                  <div className="absolute top-1/3 left-1/4 w-3 h-3 rounded-full bg-[#1A3C34] ring-2 ring-white shadow-sm" />
+                  
+                  <div className="absolute top-1/2 left-1/2 w-4 h-4 rounded-full bg-[#2D7A3A]/20 animate-ping" style={{ animationDelay: "0.5s" }} />
+                  <div className="absolute top-1/2 left-1/2 w-3 h-3 rounded-full bg-[#2D7A3A] ring-2 ring-white shadow-sm" />
+                  
+                  <div className="absolute top-2/3 right-1/3 w-4 h-4 rounded-full bg-red-500/20 animate-ping" style={{ animationDelay: "1s" }} />
+                  <div className="absolute top-2/3 right-1/3 w-3 h-3 rounded-full bg-red-500 ring-2 ring-white shadow-sm" />
+                  
                   {/* Simulated route line */}
                   <svg className="absolute inset-0 w-full h-full" xmlns="http://www.w3.org/2000/svg">
-                    <line x1="25%" y1="33%" x2="50%" y2="50%" stroke="rgba(96,165,250,0.2)" strokeWidth="1" strokeDasharray="4 4" />
-                    <line x1="50%" y1="50%" x2="67%" y2="67%" stroke="rgba(96,165,250,0.2)" strokeWidth="1" strokeDasharray="4 4" />
+                    <line x1="25%" y1="33%" x2="50%" y2="50%" stroke="#1A3C34" strokeOpacity="0.2" strokeWidth="2" strokeDasharray="6 6" />
+                    <line x1="50%" y1="50%" x2="67%" y2="67%" stroke="#1A3C34" strokeOpacity="0.2" strokeWidth="2" strokeDasharray="6 6" />
                   </svg>
                 </>
               )}
             </div>
+
             {/* Center label */}
-            <div className="text-center z-10 bg-black/70 p-6 rounded-2xl backdrop-blur-xl border border-white/[0.06]">
-              <MapPin className="w-6 h-6 text-blue-400/40 mx-auto mb-3" />
-              <h3 className="text-[14px] font-semibold text-foreground mb-1">Live Map</h3>
-              <p className="text-[12px] text-muted-foreground max-w-[200px] leading-relaxed">
-                Mapbox GL renders optimized routes here in production.
+            <div className="text-center z-10 bg-white/90 p-8 rounded-3xl shadow-glass ring-1 ring-[#1A3C34]/10 backdrop-blur-2xl">
+              <div className="w-12 h-12 rounded-full bg-[#1A3C34]/5 flex items-center justify-center mx-auto mb-4">
+                <MapPin className="w-6 h-6 text-[#1A3C34]/40" />
+              </div>
+              <h3 className="text-[16px] font-bold text-[#1A3C34] mb-2">Live Routing</h3>
+              <p className="text-[13px] text-[#1A3C34]/60 max-w-[200px] leading-relaxed mx-auto">
+                Mapbox GL renders dynamic, traffic-aware routes here in production.
               </p>
             </div>
           </div>

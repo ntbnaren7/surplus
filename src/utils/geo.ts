@@ -11,6 +11,19 @@ export function calculateDistance(lat1: number, lon1: number, lat2: number, lon2
   return Number(d.toFixed(1));
 }
 
+/**
+ * Checks if two coordinates are within a given range in kilometers.
+ * Used by the matching engine to filter out-of-range facilities.
+ */
+export function isWithinRange(
+  lat1: number, lon1: number,
+  lat2: number, lon2: number,
+  maxKm: number
+): boolean {
+  return calculateDistance(lat1, lon1, lat2, lon2) <= maxKm;
+}
+
 function deg2rad(deg: number): number {
   return deg * (Math.PI / 180);
 }
+
