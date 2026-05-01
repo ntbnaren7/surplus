@@ -11,6 +11,7 @@ export const foodItemSchema = z.object({
     lat: z.number(),
     lng: z.number(),
   }),
+  imageUrl: z.string().optional(),
 });
 
 export type FoodItem = z.infer<typeof foodItemSchema>;

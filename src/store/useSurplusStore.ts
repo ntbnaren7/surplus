@@ -37,7 +37,8 @@ export const useSurplusStore = create<SurplusStore>((set) => ({
       location: {
         lat: CITY_CENTER.lat + 0.045,  // ~5km away
         lng: CITY_CENTER.lng - 0.03,
-      }
+      },
+      imageUrl: '/images/prepared_salads.png' // using salads image for now
     },
     // ── URGENT: Expires in 1.5 hours, moderate distance ──
     {
@@ -50,7 +51,8 @@ export const useSurplusStore = create<SurplusStore>((set) => ({
       location: {
         lat: CITY_CENTER.lat + 0.01,   // ~1.1km away
         lng: CITY_CENTER.lng + 0.005,
-      }
+      },
+      imageUrl: '/images/roasted_chicken.png'
     },
     // ── STANDARD: Expires in 12 hours, very close ──
     // Despite proximity, this should rank BELOW urgent items.
@@ -64,17 +66,25 @@ export const useSurplusStore = create<SurplusStore>((set) => ({
       location: {
         lat: CITY_CENTER.lat + 0.002,  // ~0.2km away
         lng: CITY_CENTER.lng + 0.001,
-      }
+      },
+      imageUrl: '/images/artisan_bread.png'
     },
   ],
 
   addSimulatedPOSDrop: () => set((state) => {
-    const categories = ['Assorted Pastries', 'Prepared Salads', 'Hot Soups', 'Bento Boxes'];
+    const categories = [
+      { name: 'Assorted Pastries', image: '/images/artisan_bread.png' }, 
+      { name: 'Prepared Salads', image: '/images/prepared_salads.png' }, 
+      { name: 'Hot Soups', image: '/images/prepared_salads.png' }, 
+      { name: 'Bento Boxes', image: '/images/roasted_chicken.png' }
+    ];
     const units: FoodItem['unit'][] = ['portions', 'pieces', 'kg'];
+    
+    const selectedCategory = categories[Math.floor(Math.random() * categories.length)];
     
     const newItem: FoodItem = {
       id: `pos-${Math.random().toString(36).substring(7)}`,
-      name: categories[Math.floor(Math.random() * categories.length)],
+      name: selectedCategory.name,
       quantity: Math.floor(Math.random() * 20) + 5,
       unit: units[Math.floor(Math.random() * units.length)],
       expiresAt: new Date(Date.now() + (Math.random() * 4 + 1) * 60 * 60 * 1000).toISOString(),
@@ -82,12 +92,14 @@ export const useSurplusStore = create<SurplusStore>((set) => ({
       location: {
         lat: CITY_CENTER.lat + (Math.random() - 0.5) * 0.1,
         lng: CITY_CENTER.lng + (Math.random() - 0.5) * 0.1,
-      }
+      },
+      imageUrl: selectedCategory.image
     };
     return { inventory: [newItem, ...state.inventory] };
   }),
 
   addManualDrop: (item) => set((state) => {
+    const images = ['/images/artisan_bread.png', '/images/prepared_salads.png', '/images/roasted_chicken.png'];
     const newItem: FoodItem = {
       ...item,
       id: `manual-${Math.random().toString(36).substring(7)}`,
@@ -96,7 +108,8 @@ export const useSurplusStore = create<SurplusStore>((set) => ({
         // Random location near downtown
         lat: CITY_CENTER.lat + (Math.random() - 0.5) * 0.05,
         lng: CITY_CENTER.lng + (Math.random() - 0.5) * 0.05,
-      }
+      },
+      imageUrl: images[Math.floor(Math.random() * images.length)]
     };
     return { inventory: [newItem, ...state.inventory] };
   }),
