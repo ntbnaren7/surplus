@@ -26,6 +26,8 @@ export const metadata: Metadata = {
 };
 
 import { SupabaseSyncProvider } from "@/components/providers/SupabaseSyncProvider";
+import { AuthProvider } from "@/components/providers/AuthProvider";
+import { QueryProvider } from "@/components/providers/QueryProvider";
 
 export default function RootLayout({
   children,
@@ -38,9 +40,13 @@ export default function RootLayout({
       className={`dark ${geistSans.variable} ${geistMono.variable} ${playfair.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col bg-background text-foreground selection:bg-primary selection:text-primary-foreground">
-        <SupabaseSyncProvider>
-          {children}
-        </SupabaseSyncProvider>
+        <QueryProvider>
+          <AuthProvider>
+            <SupabaseSyncProvider>
+              {children}
+            </SupabaseSyncProvider>
+          </AuthProvider>
+        </QueryProvider>
         <Toaster theme="dark" position="bottom-right" richColors />
       </body>
     </html>

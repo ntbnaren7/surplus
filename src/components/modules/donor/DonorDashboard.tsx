@@ -7,9 +7,11 @@ import { useSurplusStore } from "@/store/useSurplusStore"
 import { getHoursUntilExpiry } from "@/utils/time"
 import { Button } from "@/components/ui/button"
 import { VisionScannerModal } from "@/components/ui/VisionScannerModal"
+import { GSAReceiptModal } from "@/components/ui/GSAReceiptModal"
+import { DonorEmptyState } from "@/components/ui/EmptyStates"
 import { type VisionScanResult } from "@/lib/vision"
 import { motion, AnimatePresence } from "framer-motion"
-import { Clock, Plus, Zap, Package, Activity, Leaf, TrendingUp, CheckCircle2, DollarSign, Radio, Brain, Sparkles, BarChart3, Camera } from "lucide-react"
+import { Clock, Plus, Zap, Package, Activity, Leaf, TrendingUp, CheckCircle2, DollarSign, Radio, Brain, Sparkles, BarChart3, Camera, FileText } from "lucide-react"
 
 /* ─── Bento card wrapper (shared pattern) ─── */
 function BentoCard({ children, className = "", delay = 0 }: { children: React.ReactNode; className?: string; delay?: number }) {
@@ -50,6 +52,8 @@ export function DonorDashboardModule() {
 
   /* ─── Vision Scanner State ─── */
   const [scannerOpen, setScannerOpen] = useState(false)
+  /* ─── GSA Receipt State ─── */
+  const [receiptOpen, setReceiptOpen] = useState(false)
 
   const handleScanComplete = (result: VisionScanResult) => {
     setName(result.itemName)
@@ -181,13 +185,7 @@ export function DonorDashboardModule() {
 
             {activeSurplus.length === 0 && (
               <div className="pt-4 border-t border-[#153F2D]/5 mt-4">
-                <div className="py-12 text-center">
-                  <div className="w-14 h-14 bg-[#153F2D]/5 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                    <Package className="w-6 h-6 text-[#153F2D]/20" />
-                  </div>
-                  <p className="font-extrabold text-[#153F2D]/60 text-[15px]">No active surplus</p>
-                  <p className="text-[#153F2D]/40 text-[12px] font-medium mt-1">Broadcast items above or use manual entry</p>
-                </div>
+                <DonorEmptyState />
               </div>
             )}
           </div>
@@ -442,6 +440,15 @@ export function DonorDashboardModule() {
           </div>
           <p className="text-[36px] font-extrabold text-[#153F2D] tracking-tight leading-none">${stats.taxCredit.toFixed(0)}</p>
           <p className="text-[12px] font-bold text-[#153F2D]/40 uppercase tracking-widest mt-2">Tax Credit (GSA)</p>
+          {stats.delivered > 0 && (
+            <button
+              onClick={() => setReceiptOpen(true)}
+              className="mt-3 flex items-center gap-1.5 text-[10px] font-extrabold text-[#5DB06D] uppercase tracking-widest hover:text-[#153F2D] transition-colors"
+            >
+              <FileText className="w-3 h-3" />
+              View Receipt
+            </button>
+          )}
         </BentoCard>
       </div>
 
@@ -450,6 +457,13 @@ export function DonorDashboardModule() {
         isOpen={scannerOpen}
         onClose={() => setScannerOpen(false)}
         onScanComplete={handleScanComplete}
+      />
+
+      {/* ─── GSA Receipt Modal ─── */}
+      <GSAReceiptModal
+        isOpen={receiptOpen}
+        onClose={() => setReceiptOpen(false)}
+        items={inventory}
       />
     </div>
   )

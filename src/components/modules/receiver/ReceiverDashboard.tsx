@@ -6,6 +6,7 @@ import { useSurplusStore } from "@/store/useSurplusStore"
 import { getHoursUntilExpiry } from "@/utils/time"
 import { calculateMatchScores, type MatchResult } from "@/lib/matching"
 import { Button } from "@/components/ui/button"
+import { ReceiverEmptyState } from "@/components/ui/EmptyStates"
 import { motion, AnimatePresence } from "framer-motion"
 import { Clock, Navigation, CheckCircle2, Package, Truck, Zap, Activity, Crosshair, Leaf, TrendingUp, Brain } from "lucide-react"
 import MapGL, { Marker, NavigationControl } from 'react-map-gl/mapbox'
@@ -302,13 +303,7 @@ export function ReceiverDashboardModule() {
             </AnimatePresence>
 
             {availableItems.length === 0 && (
-              <div className="py-16 text-center">
-                <div className="w-14 h-14 bg-[#153F2D]/5 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                  <Activity className="w-6 h-6 text-[#153F2D]/20 animate-pulse" />
-                </div>
-                <p className="font-extrabold text-[#153F2D]/60 text-[15px]">Scanning Nearby</p>
-                <p className="text-[#153F2D]/40 text-[12px] font-medium mt-1">Feed updates automatically</p>
-              </div>
+              <ReceiverEmptyState />
             )}
           </div>
         </BentoCard>

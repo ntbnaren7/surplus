@@ -43,8 +43,8 @@ export default function LandingPage() {
         </div>
         
         <div className="flex items-center gap-8">
-          <Link href="/donor" className="text-[14px] font-medium text-[#153F2D]">Log in</Link>
-          <Link href="/donor" className="bg-[#153F2D] text-white text-[14px] font-medium px-7 py-3 rounded-full hover:bg-[#0f2d20] transition-colors">
+          <Link href="/login" className="text-[14px] font-medium text-[#153F2D]">Log in</Link>
+          <Link href="/login" className="bg-[#153F2D] text-white text-[14px] font-medium px-7 py-3 rounded-full hover:bg-[#0f2d20] transition-colors">
             Get started
           </Link>
         </div>

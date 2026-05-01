@@ -7,6 +7,7 @@ import { getHoursUntilExpiry } from "@/utils/time"
 import { optimizeRoute, type OptimizedRoute } from "@/lib/routing"
 import { Button } from "@/components/ui/button"
 import { ComplianceModal } from "@/components/ui/ComplianceModal"
+import { DriverEmptyState } from "@/components/ui/EmptyStates"
 import { motion, AnimatePresence } from "framer-motion"
 import { Navigation2, CheckCircle2, Clock, Scan, Crosshair, Leaf, Zap, TrendingUp, Truck, Package, Shield, Brain, Route } from "lucide-react"
 import MapGL, { Marker, NavigationControl, Source, Layer } from 'react-map-gl/mapbox'
@@ -369,13 +370,7 @@ export function DriverDashboardModule() {
             </AnimatePresence>
 
             {activeRuns.length === 0 && (
-              <div className="py-16 text-center">
-                <div className="w-14 h-14 bg-[#153F2D]/5 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                  <Scan className="w-6 h-6 text-[#153F2D]/20 animate-pulse" />
-                </div>
-                <p className="font-extrabold text-[#153F2D]/60 text-[15px]">Standby Mode</p>
-                <p className="text-[#153F2D]/40 text-[12px] font-medium mt-1">Awaiting dispatch orders</p>
-              </div>
+              <DriverEmptyState />
             )}
           </div>
         </BentoCard>
