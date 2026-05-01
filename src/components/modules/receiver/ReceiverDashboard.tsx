@@ -78,7 +78,7 @@ export function ReceiverDashboardModule() {
                       </div>
                       <div className="flex items-center gap-1.5">
                         <Navigation className="w-3.5 h-3.5" />
-                        <span className="font-mono">2.4 mi</span>
+                        <span className="font-mono">{item.distance} km</span>
                       </div>
                       {isUrgent && (
                         <Badge variant="destructive" className="animate-breathe text-[10px] px-2 py-0">Urgent</Badge>

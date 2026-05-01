@@ -4,7 +4,7 @@ import { toast } from "sonner";
 export function useDriver() {
   const { inventory, markAsDelivered } = useSurplusStore();
   
-  const activeRuns = inventory.filter(item => item.status === 'claimed' || item.status === 'in_transit');
+  const activeRuns = inventory.filter(item => item.status === 'CLAIMED' || item.status === 'IN_TRANSIT');
 
   const completeDelivery = (id: string) => {
     try {

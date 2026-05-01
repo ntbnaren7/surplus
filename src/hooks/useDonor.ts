@@ -1,12 +1,11 @@
 import { useSurplusStore } from "@/store/useSurplusStore";
 import { posDropPayloadSchema, type POSDropPayload } from "@/lib/validations/food";
 import { toast } from "sonner";
-import { addHours } from "date-fns";
 
 export function useDonor() {
   const { inventory, addSimulatedPOSDrop } = useSurplusStore();
   
-  const activeSurplus = inventory.filter(item => item.status === 'available');
+  const activeSurplus = inventory.filter(item => item.status === 'AVAILABLE');
 
   const simulateDrop = () => {
     // 1. Construct raw payload (simulating incoming data from POS)
@@ -14,7 +13,8 @@ export function useDonor() {
       name: 'Assorted Pastries',
       quantity: Math.floor(Math.random() * 20) + 5,
       unit: 'pieces',
-      hoursUntilExpiry: 4
+      hoursUntilExpiry: 4,
+      location: { lat: 40.7128, lng: -74.0060 }
     };
 
     // 2. Validate payload against schema to ensure integrity
@@ -30,9 +30,6 @@ export function useDonor() {
 
     const validData: POSDropPayload = result.data;
     
-    // We override the store's basic drop logic to do it here, or we can just call the store
-    // Wait, the store has `addSimulatedPOSDrop` which hardcodes things. 
-    // Let's refactor `addSimulatedPOSDrop` in the store to accept `FoodItem` next, but for now we'll just call it if valid.
     addSimulatedPOSDrop();
     toast.success("POS Sync Successful", {
       description: `Automatically detected ${validData.quantity} ${validData.unit} of ${validData.name}.`

@@ -119,17 +119,17 @@ body::before {
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.08);
+  background: rgba(26, 60, 52, 0.1);
   border-radius: 999px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.15);
+  background: rgba(26, 60, 52, 0.2);
 }
 
 /* Selection color */
 ::selection {
-  background: rgba(52, 211, 153, 0.25);
-  color: #fafafa;
+  background: rgba(45, 122, 58, 0.15);
+  color: #1A3C34;
 }
 
 /* Glow border utility */
