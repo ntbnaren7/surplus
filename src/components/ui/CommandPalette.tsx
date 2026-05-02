@@ -5,7 +5,7 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/components/providers/AuthProvider'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Search, Store, Truck, Heart, FileText, Radio, LogOut, Brain, Home } from 'lucide-react'
+import { Search, Store, Truck, Heart, FileText, Radio, LogOut, Brain, Home, Zap } from 'lucide-react'
 
 export function CommandPalette() {
   const [open, setOpen] = useState(false)
@@ -73,6 +73,9 @@ export function CommandPalette() {
                   </Command.Item>
                   <Command.Item onSelect={() => runAction(() => router.push('/receiver'))} className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-[13px] font-medium text-[#153F2D] cursor-pointer hover:bg-[#153F2D]/5 data-[selected=true]:bg-[#153F2D]/5">
                     <Heart className="w-4 h-4 text-[#7C3AED]" /> Receiver Dashboard
+                  </Command.Item>
+                  <Command.Item onSelect={() => runAction(() => router.push('/volunteer'))} className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-[13px] font-medium text-[#153F2D] cursor-pointer hover:bg-[#153F2D]/5 data-[selected=true]:bg-[#153F2D]/5">
+                    <Zap className="w-4 h-4 text-[#0EA5E9]" /> Volunteer Dashboard
                   </Command.Item>
                 </Command.Group>
 

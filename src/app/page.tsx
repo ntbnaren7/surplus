@@ -36,10 +36,13 @@ export default function LandingPage() {
         
         <div className="hidden md:flex items-center gap-10">
           <Link href="#" className="text-[14px] font-semibold text-[#153F2D]">How it works</Link>
-          <Link href="/donor" className="text-[14px] font-medium text-[#153F2D]/70 hover:text-[#153F2D]">For Donors</Link>
-          <Link href="/receiver" className="text-[14px] font-medium text-[#153F2D]/70 hover:text-[#153F2D]">For NGOs</Link>
-          <Link href="/driver" className="text-[14px] font-medium text-[#153F2D]/70 hover:text-[#153F2D]">Impact</Link>
-          <Link href="#" className="text-[14px] font-medium text-[#153F2D]/70 hover:text-[#153F2D]">About us</Link>
+          <Link href="/donor" className="text-[14px] font-medium text-[#153F2D]/70 hover:text-[#153F2D] transition-colors">For Donors</Link>
+          <Link href="/receiver" className="text-[14px] font-medium text-[#153F2D]/70 hover:text-[#153F2D] transition-colors">For NGOs</Link>
+          <Link href="/volunteer" className="text-[14px] font-medium text-[#153F2D]/70 hover:text-[#0EA5E9] transition-colors relative group">
+            For Volunteers
+            <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-[#0EA5E9] transition-all group-hover:w-full"></span>
+          </Link>
+          <Link href="/driver" className="text-[14px] font-medium text-[#153F2D]/70 hover:text-[#153F2D] transition-colors">Impact</Link>
         </div>
         
         <div className="flex items-center gap-8">
@@ -75,17 +78,15 @@ export default function LandingPage() {
             </p>
 
             {/* Action Buttons */}
-            <div className="flex items-center gap-6 mb-14">
+            <div className="flex items-center gap-4 mb-14">
               <Link href="/donor" className="bg-[#153F2D] text-white text-[15px] font-medium px-8 py-4 rounded-full flex items-center gap-2 hover:bg-[#0f2d20] transition-colors shadow-md">
-                See how it works
+                Get Started
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
               </Link>
-              <button className="flex items-center gap-3 text-[15px] font-medium text-[#153F2D] hover:text-[#5DB06D] transition-colors group">
-                <div className="w-10 h-10 rounded-full border border-[#153F2D]/20 flex items-center justify-center group-hover:border-[#5DB06D]/50">
-                  <svg width="12" height="14" viewBox="0 0 12 14" fill="#153F2D" className="group-hover:fill-[#5DB06D]"><path d="M11.5 6.13397C12.1667 6.51887 12.1667 7.48113 11.5 7.86603L1.75 13.4952C1.08333 13.8801 0.25 13.399 0.25 12.6292L0.25 1.37083C0.25 0.601035 1.08333 0.11991 1.75 0.50481L11.5 6.13397Z"/></svg>
-                </div>
-                Watch demo
-              </button>
+              <Link href="/volunteer" className="bg-white text-[#0EA5E9] border border-[#0EA5E9]/20 text-[15px] font-bold px-8 py-4 rounded-full flex items-center gap-2 hover:bg-[#0EA5E9]/5 hover:border-[#0EA5E9]/40 transition-colors shadow-sm group">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="group-hover:scale-110 transition-transform"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+                Join the Rescue
+              </Link>
             </div>
 
             {/* Trust Avatars */}

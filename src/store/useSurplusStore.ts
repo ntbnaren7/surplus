@@ -23,7 +23,7 @@ interface SurplusStore {
   updateItemStatus: (id: string, newStatus: FoodItem['status']) => Promise<void>;
 }
 
-const CITY_CENTER = { lat: 40.7128, lng: -74.0060 };
+const CITY_CENTER = { lat: 12.9335, lng: 77.6229 };
 
 export const useSurplusStore = create<SurplusStore>((set, get) => ({
   inventory: [],

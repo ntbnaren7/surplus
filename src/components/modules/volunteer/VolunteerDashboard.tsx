@@ -77,9 +77,9 @@ function SwipeToAccept({ onAccept }: { onAccept: () => void }) {
 
 export function VolunteerDashboard() {
   const [viewState, setViewState] = useState({
-    longitude: -122.4194,
-    latitude: 37.7749,
-    zoom: 12
+    longitude: 77.6229,
+    latitude: 12.9335,
+    zoom: 14.5
   })
   
   const [activeMission, setActiveMission] = useState<string | null>(null)
@@ -117,11 +117,11 @@ export function VolunteerDashboard() {
     triggerConfetti()
   }
 
-  // Simulated active pings
+  // Simulated active pings (Koramangala, Bangalore)
   const pings = [
-    { id: '1', name: 'Artisan Bread', qty: '15 loaves', distance: '0.8 mi', urgency: 'High', lat: 37.7849, lng: -122.4094 },
-    { id: '2', name: 'Fresh Produce', qty: '20 lbs', distance: '1.2 mi', urgency: 'Medium', lat: 37.7649, lng: -122.4294 },
-    { id: '3', name: 'Hot Meals', qty: '10 portions', distance: '2.5 mi', urgency: 'High', lat: 37.7749, lng: -122.4494 },
+    { id: '1', name: 'Chicken Biryani Surplus', qty: '25 kg', distance: '0.8 km', urgency: 'High', lat: 12.9345, lng: 77.6200 }, // Hotel Empire
+    { id: '2', name: 'Fresh Milk (Tetra Packs)', qty: '12 liters', distance: '1.2 km', urgency: 'Medium', lat: 12.9300, lng: 77.6180 }, // St. John's
+    { id: '3', name: 'Mixed Artisan Pastries', qty: '15 boxes', distance: '2.5 km', urgency: 'High', lat: 12.9360, lng: 77.6240 }, // Ooty Pastry
   ]
 
   return (

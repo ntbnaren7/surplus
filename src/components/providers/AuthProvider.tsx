@@ -91,28 +91,30 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return { error: null }
   }, [])
 
-  /* ─── Sign Up (with profile creation) ─── */
+  /* ─── Sign Up (with profile creation via Trigger) ─── */
   const signUp = useCallback(async (email: string, password: string, role: UserRole, fullName: string) => {
-    const { data, error } = await supabase.auth.signUp({ email, password })
+    // We pass the role and fullName as raw_user_meta_data so the Database Trigger
+    // can securely create the profile row without hitting RLS conflicts.
+    const { data, error } = await supabase.auth.signUp({ 
+      email, 
+      password,
+      options: {
+        data: {
+          role,
+          full_name: fullName
+        }
+      }
+    })
+    
     if (error) return { error: error.message }
 
-    // Create profile row
+    // Fetch the profile that the database trigger just created
     if (data.user) {
-      const { error: profileError } = await supabase.from('profiles').insert({
-        id: data.user.id,
-        email,
-        role,
-        full_name: fullName,
-      })
-      if (profileError) {
-        console.error('[Auth] Profile creation error:', profileError)
-      } else {
-        setProfile({ id: data.user.id, email, role, fullName })
-      }
+      await fetchProfile(data.user.id, email)
     }
 
     return { error: null }
-  }, [])
+  }, [fetchProfile])
 
   /* ─── Sign Out ─── */
   const signOut = useCallback(async () => {

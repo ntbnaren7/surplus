@@ -37,9 +37,9 @@ export function DriverDashboardModule() {
   const [locationReady, setLocationReady] = useState(false)
 
   const [viewState, setViewState] = useState({
-    longitude: -74.0060,
-    latitude: 40.7128,
-    zoom: 13,
+    longitude: 77.6229,
+    latitude: 12.9335,
+    zoom: 14.5,
     pitch: 40,
     bearing: -15
   })

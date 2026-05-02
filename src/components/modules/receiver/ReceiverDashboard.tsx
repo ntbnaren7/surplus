@@ -42,14 +42,14 @@ export function ReceiverDashboardModule() {
   }, [availableItems])
 
   /* ─── Geolocation (Receiver facility) ─── */
-  const [facilityLocation, setFacilityLocation] = useState({ lat: 40.7180, lng: -74.0080 })
+  const [facilityLocation, setFacilityLocation] = useState({ lat: 12.9335, lng: 77.6229 })
   const [locationReady, setLocationReady] = useState(false)
 
   const [viewState, setViewState] = useState({
-    longitude: -74.0080,
-    latitude: 40.7180,
-    zoom: 13,
-    pitch: 30,
+    longitude: 77.6229,
+    latitude: 12.9335,
+    zoom: 14.5,
+    pitch: 0,
     bearing: 0
   })
 

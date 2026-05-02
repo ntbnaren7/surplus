@@ -2,7 +2,7 @@
 
 import { useAuth, type UserRole } from "@/components/providers/AuthProvider"
 import { useRouter } from "next/navigation"
-import { useEffect } from "react"
+import { useEffect, useState } from "react"
 import { motion } from "framer-motion"
 import { Shield } from "lucide-react"
 
@@ -22,12 +22,17 @@ export function RBACGuard({
 }) {
   const { user, profile, isLoading } = useAuth()
   const router = useRouter()
+  const [mounted, setMounted] = useState(false)
 
   useEffect(() => {
-    if (!isLoading && !user) {
+    setMounted(true)
+  }, [])
+
+  useEffect(() => {
+    if (mounted && !isLoading && !user) {
       router.push('/login')
     }
-  }, [user, isLoading, router])
+  }, [user, isLoading, router, mounted])
 
   // Loading state
   if (isLoading) {
