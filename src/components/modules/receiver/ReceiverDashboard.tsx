@@ -2,6 +2,7 @@
 
 import { useReceiver } from "@/hooks/useReceiver"
 import { useReceiverRadar } from "@/hooks/useReceiverRadar"
+import { useLogisticsListener } from "@/hooks/useLogisticsListener"
 import { useSurplusStore } from "@/store/useSurplusStore"
 import { getHoursUntilExpiry } from "@/utils/time"
 import { calculateMatchScores, type MatchResult } from "@/lib/matching"
@@ -31,6 +32,7 @@ export function ReceiverDashboardModule() {
   const { availableItems, incomingItems, claimSurplus } = useReceiver()
   const { inventory } = useSurplusStore()
   const { driverPositions } = useReceiverRadar()
+  const { vehicleList } = useLogisticsListener()
 
   /* ─── Smart Match Engine ─── */
   const matchScores = useMemo(() => {
@@ -182,6 +184,21 @@ export function ReceiverDashboardModule() {
                   </div>
                   <div className="absolute inset-0 bg-[#EAB308]/25 rounded-full animate-ping" />
                 </div>
+              </Marker>
+            ))}
+
+            {/* Live Simulator Vehicle Pins (from logistics-pulse channel) */}
+            {vehicleList.map((v) => (
+              <Marker key={v.missionId} longitude={v.lng} latitude={v.lat} anchor="center">
+                <div
+                  className="relative"
+                  style={{ transform: `rotate(${v.bearing}deg)` }}
+                >
+                  <div className="w-10 h-10 rounded-full bg-[#0EA5E9] flex items-center justify-center border-2 border-white shadow-[0_0_20px_rgba(14,165,233,0.6)]">
+                    <Truck className="w-4 h-4 text-white" />
+                  </div>
+                </div>
+                <div className="absolute inset-[-4px] bg-[#0EA5E9]/20 rounded-full animate-ping" />
               </Marker>
             ))}
           </MapGL>

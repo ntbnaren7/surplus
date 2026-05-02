@@ -2,6 +2,7 @@
 
 import { useDriver } from "@/hooks/useDriver"
 import { useDriverRadar } from "@/hooks/useDriverRadar"
+import { useLogisticsSimulator, KORAMANGALA_ROUTES } from "@/hooks/useLogisticsSimulator"
 import { useSurplusStore } from "@/store/useSurplusStore"
 import { getHoursUntilExpiry } from "@/utils/time"
 import { optimizeRoute, type OptimizedRoute } from "@/lib/routing"
@@ -9,7 +10,7 @@ import { Button } from "@/components/ui/button"
 import { ComplianceModal } from "@/components/ui/ComplianceModal"
 import { DriverEmptyState } from "@/components/ui/EmptyStates"
 import { motion, AnimatePresence } from "framer-motion"
-import { Navigation2, CheckCircle2, Clock, Scan, Crosshair, Leaf, Zap, TrendingUp, Truck, Package, Shield, Brain, Route } from "lucide-react"
+import { Navigation2, CheckCircle2, Clock, Scan, Crosshair, Leaf, Zap, TrendingUp, Truck, Package, Shield, Brain, Route, Play, Square, RotateCcw, MapPin } from "lucide-react"
 import MapGL, { Marker, NavigationControl, Source, Layer } from 'react-map-gl/mapbox'
 import 'mapbox-gl/dist/mapbox-gl.css'
 import { useState, useEffect, useMemo, useCallback } from "react"
@@ -32,8 +33,12 @@ export function DriverDashboardModule() {
   const { activeRuns, completeDelivery } = useDriver()
   const { inventory } = useSurplusStore()
 
+  /* ─── Logistics Simulator ─── */
+  const simulator = useLogisticsSimulator({ speedKmh: 20, missionId: 'koramangala-rescue-001' })
+  const [selectedRoute, setSelectedRoute] = useState<string>('hotel-empire-to-vemana')
+
   /* ─── Geolocation ─── */
-  const [driverLocation, setDriverLocation] = useState({ lat: 40.7128, lng: -74.0060 })
+  const [driverLocation, setDriverLocation] = useState({ lat: 12.9335, lng: 77.6229 })
   const [locationReady, setLocationReady] = useState(false)
 
   const [viewState, setViewState] = useState({
@@ -240,6 +245,94 @@ export function DriverDashboardModule() {
                 </div>
               )}
             </motion.div>
+
+            {/* ─── Mission Dispatch Panel ─── */}
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.5 }}
+              className="absolute bottom-[85px] left-4 right-4 z-10 pointer-events-none"
+            >
+              <div className="bg-gradient-to-r from-[#0EA5E9]/90 to-[#0284C7]/90 backdrop-blur-2xl rounded-2xl p-4 shadow-lg border border-white/10 pointer-events-auto">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-lg bg-white/20 flex items-center justify-center">
+                      <Truck className="w-4 h-4 text-white" />
+                    </div>
+                    <div>
+                      <p className="text-[12px] font-extrabold text-white leading-tight">Live Simulator</p>
+                      {simulator.state.isRunning ? (
+                        <div className="flex items-center gap-2 text-[10px] text-white/70 font-bold">
+                          <span className="relative flex h-1.5 w-1.5">
+                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#5DB06D] opacity-75" />
+                            <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-[#5DB06D]" />
+                          </span>
+                          <span>{simulator.state.statusLabel}</span>
+                          <span className="text-white/30">•</span>
+                          <span>{Math.round(simulator.state.progress)}%</span>
+                        </div>
+                      ) : (
+                        <p className="text-[10px] text-white/50 font-bold">{simulator.state.statusLabel}</p>
+                      )}
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    {/* Route selector */}
+                    <select
+                      value={selectedRoute}
+                      onChange={(e) => setSelectedRoute(e.target.value)}
+                      disabled={simulator.state.isRunning}
+                      className="bg-white/10 text-white text-[10px] font-bold border border-white/10 rounded-lg px-2 py-1.5 outline-none disabled:opacity-50"
+                    >
+                      {Object.entries(KORAMANGALA_ROUTES).map(([key, r]) => (
+                        <option key={key} value={key} className="bg-[#0a0a0a] text-white">
+                          {r.originName} → {r.destinationName}
+                        </option>
+                      ))}
+                    </select>
+                    {!simulator.state.isRunning ? (
+                      <button
+                        onClick={() => simulator.startSimulation(KORAMANGALA_ROUTES[selectedRoute])}
+                        className="flex items-center gap-1.5 bg-white text-[#0EA5E9] px-3 py-1.5 rounded-lg text-[10px] font-extrabold uppercase tracking-widest hover:bg-white/90 transition-colors"
+                      >
+                        <Play className="w-3 h-3" />
+                        Dispatch
+                      </button>
+                    ) : (
+                      <button
+                        onClick={simulator.stopSimulation}
+                        className="flex items-center gap-1.5 bg-white/20 text-white px-3 py-1.5 rounded-lg text-[10px] font-extrabold uppercase tracking-widest hover:bg-white/30 transition-colors"
+                      >
+                        <Square className="w-3 h-3" />
+                        Stop
+                      </button>
+                    )}
+                    {simulator.state.phase === 'arrived' && (
+                      <button
+                        onClick={simulator.resetSimulation}
+                        className="flex items-center gap-1.5 bg-white/20 text-white px-3 py-1.5 rounded-lg text-[10px] font-extrabold uppercase tracking-widest hover:bg-white/30 transition-colors"
+                      >
+                        <RotateCcw className="w-3 h-3" />
+                        Reset
+                      </button>
+                    )}
+                  </div>
+                </div>
+
+                {/* Progress Bar */}
+                {simulator.state.isRunning && (
+                  <div className="mt-3 pt-3 border-t border-white/10">
+                    <div className="h-1.5 w-full bg-white/10 rounded-full overflow-hidden">
+                      <motion.div
+                        className="h-full rounded-full bg-gradient-to-r from-white to-[#5DB06D]"
+                        animate={{ width: `${simulator.state.progress}%` }}
+                        transition={{ duration: 0.3, ease: 'linear' }}
+                      />
+                    </div>
+                  </div>
+                )}
+              </div>
+            </motion.div>
           </div>
 
           {/* Mapbox instance */}
@@ -298,6 +391,99 @@ export function DriverDashboardModule() {
                   }}
                 />
               </Source>
+            )}
+
+            {/* ═══ LIVE SIMULATOR LAYERS ═══ */}
+
+            {/* Traveled path (grey, solid) */}
+            {simulator.traveledCoords.length >= 2 && (
+              <Source id="sim-traveled" type="geojson" data={{
+                type: 'Feature' as const,
+                properties: {},
+                geometry: { type: 'LineString' as const, coordinates: simulator.traveledCoords }
+              }}>
+                <Layer
+                  id="sim-traveled-layer"
+                  type="line"
+                  paint={{
+                    'line-color': '#6B7280',
+                    'line-width': 4,
+                    'line-opacity': 0.5,
+                  }}
+                />
+              </Source>
+            )}
+
+            {/* Remaining path (vibrant blue, dashed) */}
+            {simulator.remainingCoords.length >= 2 && (
+              <Source id="sim-remaining" type="geojson" data={{
+                type: 'Feature' as const,
+                properties: {},
+                geometry: { type: 'LineString' as const, coordinates: simulator.remainingCoords }
+              }}>
+                <Layer
+                  id="sim-remaining-layer"
+                  type="line"
+                  paint={{
+                    'line-color': '#0EA5E9',
+                    'line-width': 4,
+                    'line-opacity': 0.9,
+                    'line-dasharray': [2, 1.5],
+                  }}
+                />
+              </Source>
+            )}
+
+            {/* Animated Vehicle Marker */}
+            {simulator.state.isRunning && (
+              <Marker
+                longitude={simulator.state.position.lng}
+                latitude={simulator.state.position.lat}
+                anchor="center"
+              >
+                <div
+                  className="relative"
+                  style={{ transform: `rotate(${simulator.state.bearing}deg)` }}
+                >
+                  <div className="w-10 h-10 rounded-full bg-[#0EA5E9] flex items-center justify-center border-3 border-white shadow-[0_0_20px_rgba(14,165,233,0.6)]">
+                    <Truck className="w-4.5 h-4.5 text-white" />
+                  </div>
+                </div>
+                {/* Ping ring */}
+                <div className="absolute inset-[-4px] bg-[#0EA5E9]/20 rounded-full animate-ping" />
+              </Marker>
+            )}
+
+            {/* Origin marker (green) */}
+            {simulator.route && (
+              <Marker
+                longitude={simulator.route.coordinates[0][0]}
+                latitude={simulator.route.coordinates[0][1]}
+                anchor="bottom"
+              >
+                <div className="flex flex-col items-center">
+                  <div className="bg-[#5DB06D] text-white text-[8px] font-extrabold px-2 py-1 rounded-lg mb-1 whitespace-nowrap shadow-lg">
+                    {simulator.route.originName}
+                  </div>
+                  <MapPin className="w-6 h-6 text-[#5DB06D] drop-shadow-lg" />
+                </div>
+              </Marker>
+            )}
+
+            {/* Destination marker (purple) */}
+            {simulator.route && (
+              <Marker
+                longitude={simulator.route.coordinates[simulator.route.coordinates.length - 1][0]}
+                latitude={simulator.route.coordinates[simulator.route.coordinates.length - 1][1]}
+                anchor="bottom"
+              >
+                <div className="flex flex-col items-center">
+                  <div className="bg-[#7C3AED] text-white text-[8px] font-extrabold px-2 py-1 rounded-lg mb-1 whitespace-nowrap shadow-lg">
+                    {simulator.route.destinationName}
+                  </div>
+                  <MapPin className="w-6 h-6 text-[#7C3AED] drop-shadow-lg" />
+                </div>
+              </Marker>
             )}
           </MapGL>
         </BentoCard>
